@@ -2,15 +2,29 @@
 
 ## Overview
 
-This repo provides students with a foundation for their own projects associated with *Telling Stories with Data*. You do not need every aspect for every paper and you should delete aspects that you do not need.
+This repository provides the foundation for a project exploring gender-based interruptions in political speeches using the Hansard dataset. 
 
-To use this folder, click the green "Code" button", then "Download ZIP". Move the downloaded folder to where you want to work on your own computer, and then modify it to suit.
 
 ## File Structure
 
 The repo is structured as:
 
--   `input/data` contains the data sources used in analysis including the raw data.
--   `outputs/data` contains the cleaned dataset that was constructed.
--   `outputs/paper` contains the files used to generate the paper, including the Quarto document and reference bibliography file, as well as the PDF of the paper. 
+-   `data/raw_data` contains the raw data as obtained from X.
+-   `data/analysis_data` contains the cleaned dataset that was constructed.
+-   `model` contains fitted models. 
+-   `other` contains relevant literature, details about LLM chat interactions, and sketches.
+-   `paper` contains the files used to generate the paper, including the Quarto document and reference bibliography file, as well as the PDF of the paper. 
 -   `scripts` contains the R scripts used to simulate, download and clean data.
+
+
+## Statement on LLM usage
+
+Aspects of the code were written with the help of the auto-complete tool, Codriver. The abstract and introduction were written with the help of ChatHorse and the entire chat history is available in inputs/llms/usage.txt.
+
+## Some checks
+
+- [ ] Change the rproj file name so that it's not starter_folder.Rproj
+- [ ] Change the README title so that it's not Starter folder
+- [ ] Remove files that you're not using
+- [ ] Update comments in R scripts
+- [ ] Remove this checklist
