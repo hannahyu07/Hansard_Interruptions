@@ -1,10 +1,10 @@
 ---
-title: "My title"
+title: "Voices in Parliament: Analyzing Interruptions Across Gender in the Australian Political Landscape"
 subtitle: "My subtitle if needed"
 author: 
-  - First author
-  - Another author
-thanks: "Code and data are available at: [https://github.com/RohanAlexander/starter_folder](https://github.com/RohanAlexander/starter_folder)."
+  - Hannah Yu
+  - Rohan Alexander
+thanks: "Code and data are available at: https://github.com/hannahyu07/Hansard_Interruptions"
 date: today
 date-format: long
 abstract: "First sentence. Second sentence. Third sentence. Fourth sentence."
@@ -19,8 +19,484 @@ bibliography: references.bib
 #| message: false
 
 library(tidyverse)
-library(palmerpenguins)
+library(arrow)
+library(here)
+library(rstanarm)
+library(modelsummary)
+library(ggplot2)
+library(knitr)
+library(tibble)
+library(gt)
+library(patchwork)
+
+
 ```
+
+
+
+```{r}
+#| include: false
+#| warning: false
+#| message: false
+hansard_corpus <- read_parquet(here::here("data/02-analysis_data/cleaned_data.parquet"))
+```
+
+```{r}
+#| include: false
+#| warning: false
+#| message: false
+# View the first few rows
+head(hansard_corpus)
+
+```
+
+
+```{r}
+#| include: false
+#| warning: false
+#| message: false
+summary(hansard_corpus)
+```
+
+
+```{r}
+#| include: false
+#| warning: false
+#| message: false
+# Calculate interruptions and speeches by gender, including rounding the proportion
+interruptions_by_gender <- hansard_corpus %>%
+  group_by(gender) %>%
+  summarise(
+    total_interruptions = sum(interject, na.rm = TRUE),
+    total_speeches = n(),
+    .groups = 'drop'  # Automatically drop the grouping
+  ) %>%
+  mutate(
+    interruption_proportion = round(total_interruptions / total_speeches, 2)  # Calculate and round the proportion of interruptions
+  )
+
+# Calculate total interruptions and speeches for all genders combined, with rounding
+interruptions_all <- hansard_corpus %>%
+  summarise(
+    total_interruptions = sum(interject, na.rm = TRUE),
+    total_speeches = n()
+  ) %>%
+  mutate(
+    gender = "All",
+    interruption_proportion = round(total_interruptions / total_speeches, 2)  # Round the proportion here as well
+  )
+
+# Combine the results for specific genders and "All"
+final_results <- bind_rows(interruptions_by_gender, interruptions_all)
+
+# Print the results
+print(final_results)
+
+```
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+#| tbl-cap: "Gender-Based Interruption Analysis in Parliamentary Speeches "
+#| label: tbl-1
+
+
+# Create a clean and professional table
+final_results %>%
+  gt() %>%
+  tab_header(
+    title = "Proportion of Interruptions by Gender",
+  ) %>%
+  fmt_percent(
+    columns = interruption_proportion,
+    decimals = 2
+  ) %>%
+  cols_label(
+    gender = "Gender",
+    total_interruptions = "Total Interruptions",
+    total_speeches = "Total Speeches",
+    interruption_proportion = "Interruption Proportion"
+  ) %>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
+    locations = cells_body()
+  ) %>%
+  tab_options(
+    table.font.size = px(14),
+    heading.title.font.size = px(18),
+    heading.subtitle.font.size = px(14),
+    data_row.padding = px(5),
+    table.border.top.color = "gray",
+    table.border.bottom.color = "gray"
+  )
+
+```
+
+@tbl-1 provides a clear view of the proportion of interruptions by gender across all speeches in the dataset. The results show that male speakers were interrupted more frequently (21% of speeches) compared to female speakers (18% of speeches). Interestingly, the interruption proportion for unknown gender speakers is significantly lower, at only 11%. Overall, considering all speeches regardless of gender, the interruption proportion stands at 18%. This data suggests that gender may play a role in how frequently speakers are interrupted during parliamentary sessions, with male speakers facing a higher rate of interruption. This could reflect broader dynamics of gender interaction within the parliamentary setting.
+
+
+
+
+```{r}
+#| include: false
+#| warning: false
+#| message: false
+#Based on the following data it shows that in fact men seem to be interrupted more on avergae than women in the australian parliment, but this could be changed from the "unknown" category.
+# Summarize interruptions by year and gender
+interruptions_summary <- hansard_corpus %>%
+  group_by(year, gender) %>%
+  summarise(
+    total_interruptions = sum(as.numeric(interject), na.rm = TRUE),
+    .groups = 'drop'
+  )
+
+# Summarize total interruptions for all genders combined per year
+interruptions_all <- hansard_corpus %>%
+  group_by(year) %>%
+  summarise(
+    total_interruptions = sum(as.numeric(interject), na.rm = TRUE),
+    .groups = 'drop'
+  ) %>%
+  mutate(
+    gender = "All"
+  )
+
+# Combine gender-specific and "All" categories data
+final_data <- bind_rows(interruptions_summary, interruptions_all)
+
+```
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+#| label: fig-1
+#| fig-cap: "Yearly Interruptions in Australian Parliament by Gender"
+
+ggplot(final_data, aes(x = year, y = total_interruptions, color = gender)) +
+  geom_line(size = 1.2) +  # Thicker lines for better visibility
+  geom_point(size = 2) +  # Larger points to highlight data
+  labs(
+    title = "Yearly Interruptions in Australian Parliament by Gender",
+    x = "Year",
+    y = "Total Interruptions",
+    color = "Gender"
+  ) +
+  scale_color_brewer(palette = "Set2") +  # Use a colorblind-friendly palette
+  theme_minimal(base_size = 14) +  # Adjust base font size for readability
+  theme(
+    legend.position = "top",  # Move legend to the top
+    legend.title = element_text(size = 10, face = "bold"),  # Bold legend title
+    legend.text = element_text(size = 8),  # Adjust legend text size
+    plot.title = element_text(size = 14, face = "bold"),  # Bold title
+    axis.title = element_text(size = 12),  # Axis title size
+    axis.text = element_text(size = 11)  # Axis text size
+  ) +
+  scale_x_continuous(breaks = seq(min(final_data$year), max(final_data$year), by = 5))  # Adjust x-axis breaks
+
+```
+
+
+
+
+```{r}
+#| include: false
+#| warning: false
+#| message: false
+
+# Ensure that 'date' is correctly formatted as Date and 'year' is extracted
+hansard_corpus <- hansard_corpus %>%
+  mutate(
+    date = as.Date(date, format = "%Y-%m-%d"),  # Convert date if it's in character form
+    year = if_else(is.na(date), NA_integer_, year(date))  # Extract year, handle NA dates
+  )
+
+# Assuming hansard_corpus has the year extracted already. If not, add this in the mutate step.
+interruptions_by_year_gender <- hansard_corpus %>%
+  group_by(year, gender) %>%
+  summarise(
+    total_interruptions = sum(interject, na.rm = TRUE),
+    total_speeches = n(),
+    .groups = 'drop'
+  ) %>%
+  mutate(
+    interruption_proportion = total_interruptions / total_speeches
+  )
+
+# Calculate for all genders per year
+interruptions_by_year_all <- hansard_corpus %>%
+  group_by(year) %>%
+  summarise(
+    total_interruptions = sum(interject, na.rm = TRUE),
+    total_speeches = n(),
+    .groups = 'drop'
+  ) %>%
+  mutate(
+    gender = "All",
+    interruption_proportion = total_interruptions / total_speeches
+  )
+
+# Combine data
+final_data <- bind_rows(interruptions_by_year_gender, interruptions_by_year_all)
+
+```
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+#| label: fig-2
+#| fig-cap: "Yearly Interruptions Proportions in Australian Parliament by Gender"
+
+ggplot(final_data, aes(x = year, y = interruption_proportion, color = gender)) +
+  geom_line(size = 1.2) +  # Thicker lines for better visibility
+  geom_point(size = 2) +  # Larger points to highlight data
+  labs(
+    title = "Yearly Interruptions Proportions\nin Australian Parliament by Gender",  # Add \n for a line break
+    x = "Year",
+    y = "Total Interruptions Proportions",
+    color = "Gender"
+  ) +
+  scale_color_brewer(palette = "Set2") +  # Use a colorblind-friendly palette
+  theme_minimal(base_size = 14) +  # Adjust base font size for readability
+  theme(
+    legend.position = "top",  # Move legend to the top
+    legend.title = element_text(size = 10, face = "bold"),  # Bold legend title
+    legend.text = element_text(size = 8),  # Adjust legend text size
+    plot.title = element_text(size = 14, face = "bold", hjust = 0.5),  # Center the title
+    axis.title = element_text(size = 12),  # Axis title size
+    axis.text = element_text(size = 11)  # Axis text size
+  ) +
+  scale_x_continuous(breaks = seq(min(final_data$year), max(final_data$year), by = 5))  # Adjust x-axis breaks
+
+```
+
+@fig-1 illustrates interruptions in the Australian Parliament from 1998 to 2022, categorized by gender. Notably, male speakers consistently faced more interruptions than females, with a peak in 2011 and a subsequent decline. Female speakers experienced fewer interruptions, with relatively stable figures across the years. The "Unknown" category, consistently low, suggests either minimal occurrence or documentation of such interruptions.
+
+
+To provide a fair comparison of interruptions across different genders within the Australian Parliament, we normalize the data by calculating proportions. This method addresses the gender imbalance in parliament, ensuring that the analysis reflects the frequency of interruptions relative to each gender's representation. @fig-2 presents the proportions of speeches interrupted by gender. It indicates that male speakers had a higher proportion of their speeches interrupted, especially during the mid-2000s to early 2010s, though the gap between genders has narrowed over time. The proportion of interruptions for female speakers generally mirrors these fluctuations, implying that specific topics or periods may have incited more active parliamentary interactions. The "Unknown" gender shows minimal changes, highlighting its limited data representation. This analysis points out both the consistency and evolution of gender dynamics within parliamentary debates over the years.
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+#| include: false
+#| warning: false
+#| message: false
+# Summarize interruptions by year, party, and gender
+interruptions_summary <- hansard_corpus %>%
+  group_by(year, party, gender) %>%
+  summarise(
+    total_interruptions = sum(interject, na.rm = TRUE),
+    .groups = 'drop'
+  )
+
+```
+
+```{r}
+#| include: false
+#| warning: false
+#| message: false
+# Plotting the data as a grouped bar chart
+ggplot(interruptions_summary, aes(x = party, y = total_interruptions, fill = gender)) +
+  geom_bar(stat = "identity", position = position_dodge()) +  # Use position_dodge() for grouped bars
+  labs(
+    title = "Interruptions by Gender and Party",
+    x = "Party",
+    y = "Total Interruptions",
+    fill = "Gender"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate x-axis labels for better readability
+
+```
+
+```{r}
+#| include: false
+#| warning: false
+#| message: false
+# Filter data for only LP and ALP parties and summarize interruptions by gender
+interruptions_major_parties <- hansard_corpus %>%
+  filter(party %in% c("LP", "ALP")) %>%
+  mutate(
+    interject = as.numeric(interject)  # Ensure interject is numeric
+  ) %>%
+  group_by(party, gender) %>%
+  summarise(
+    total_interruptions = sum(interject, na.rm = TRUE),
+    .groups = 'drop'
+  )
+
+```
+
+```{r}
+#| include: false
+#| warning: false
+#| message: false
+# Assuming the 'hansard_corpus' and 'interject' are properly loaded and converted
+# First, let's create a summary for each gender within the two parties.
+interruptions_gender <- hansard_corpus %>%
+  filter(party %in% c("LP", "ALP")) %>%
+  group_by(party, gender) %>%
+  summarise(
+    total_interruptions = sum(as.numeric(interject), na.rm = TRUE),
+    .groups = 'drop'
+  )
+
+
+```
+
+```{r}
+#| include: false
+#| warning: false
+#| message: false
+# Plotting with the inclusion of "All"
+ggplot(interruptions_major_parties, aes(x = party, y = total_interruptions, fill = gender)) +
+  geom_bar(stat = "identity", position = position_dodge(), width = 0.7) +
+  scale_fill_manual(values = c("Female" = "#FF9999", "Male" = "#9999FF")) +  # Color for "All"
+  labs(
+    title = "Gender-based and Total Interruptions\nin Major Australian Political Parties",
+    x = "Political Party",
+    y = "Total Interruptions",
+    fill = "Gender"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14, hjust=0.5),
+    plot.subtitle = element_text(face = "italic"),
+    axis.title = element_text(size = 12),
+    axis.text.x = element_text(angle = 0, vjust = 0.5),
+    legend.title = element_text(size = 10),
+    legend.text = element_text(size = 9)
+  )
+
+```
+```{r}
+#| include: false
+#| warning: false
+#| message: false
+# Calculate the normalized proportion (probability of interruption)
+interruptions_normalized <- hansard_corpus %>%
+  filter(party %in% c("LP", "ALP")) %>%
+  group_by(party, gender) %>%
+  summarise(
+    total_interruptions = sum(as.numeric(interject), na.rm = TRUE),  # Total interruptions by gender and party
+    total_speeches = n(),  # Total speeches by gender and party
+    .groups = 'drop'
+  ) %>%
+  mutate(
+    interruption_probability = total_interruptions / total_speeches  # Normalized proportion (probability)
+  )
+
+```
+
+```{r}
+#| include: false
+#| warning: false
+#| message: false
+# Plotting the normalized proportions
+ggplot(interruptions_normalized, aes(x = party, y = interruption_probability, fill = gender)) +
+  geom_bar(stat = "identity", position = position_dodge(), width = 0.7) +  # Bar plot with proportions
+  scale_fill_manual(values = c("Female" = "#FF9999", "Male" = "#9999FF")) +  # Custom colors for gender
+  labs(
+    title = "Normalized Gender-based Interruptions\nin Major Australian Political Parties",
+    x = "Political Party",
+    y = "Probability of Interruption",
+    fill = "Gender"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14, hjust = 0.5),
+    axis.title = element_text(size = 12),
+    axis.text.x = element_text(angle = 0, vjust = 0.5),
+    legend.title = element_text(size = 10),
+    legend.text = element_text(size = 9)
+  )
+
+
+```
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+#| label: fig-3
+#| fig-cap: "Interruptions in Major Australian Political Parties by Gender"
+
+# Remove the legend from the first plot
+plot1 <- ggplot(interruptions_major_parties, aes(x = party, y = total_interruptions, fill = gender)) +
+  geom_bar(stat = "identity", position = position_dodge(), width = 0.7) +
+  scale_fill_manual(values = c("Female" = "#FF9999", "Male" = "#9999FF")) +  # Colors for genders
+  labs(
+    x = "Political Party",
+    y = "Total Interruptions"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.subtitle = element_text(face = "bold", size = 12, hjust = 0.5),  # Subtitle styling
+    axis.title = element_text(size = 11),
+    axis.text.x = element_text(angle = 0, vjust = 0.5),
+    legend.position = "none",  # Remove the legend
+    legend.text = element_text(size = 9)
+  )
+
+# Keep the legend only in the second plot
+plot2 <- ggplot(interruptions_normalized, aes(x = party, y = interruption_probability, fill = gender)) +
+  geom_bar(stat = "identity", position = position_dodge(), width = 0.7) +  # Bar plot with proportions
+  scale_fill_manual(values = c("Female" = "#FF9999", "Male" = "#9999FF")) +  # Custom colors for gender
+  labs(
+    x = "Political Party",
+    y = "Probability of Interruption",
+    fill = "Gender"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.subtitle = element_text(face = "bold", size = 12, hjust = 0.5),  # Subtitle styling
+    axis.title = element_text(size = 11),
+    axis.text.x = element_text(angle = 0, vjust = 0.5),
+    legend.title = element_text(size = 10),
+    legend.text = element_text(size = 9)
+  )
+
+# Add a combined title and arrange plots with patchwork
+(plot1 + plot2) +
+  plot_annotation(
+    title = "Interruptions in Major Australian Political Parties by Gender",
+    theme = theme(
+      plot.title = element_text(size = 12, face = "bold", hjust = 0.5)  # Big title styling
+    )
+  )
+
+```
+
+@fig-3 focuses on the Liberal Party (LP) and the Australian Labor Party (ALP), the two major parties in Australian politics, to analyze interruptions by gender. Since these parties dominate parliamentary proceedings, they provide a significant sample of gender interaction dynamics. The total interruptions are higher in the ALP compared to the LP, with male members experiencing more interruptions than female members in both parties. We use proportions to normalize the data, accounting for differences in gender representation within these parties. This approach helps us understand the rate at which female and male members are interrupted relative to their participation, offering a clearer insight into the parliamentary discourse dynamics.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # Introduction
@@ -34,19 +510,26 @@ Results paragraph
 Why it matters paragraph
 
 Telegraphing paragraph: The remainder of this paper is structured as follows. @sec-data....
+git config --global http.postBuffer 524288000
+
+git config --global http.postBuffer 629145600
 
 
+git reset --soft HEAD~1
 
 
-
+git lfs install
+git lfs track "*.parquet"
+git add .gitattributes
+git commit -m "Track large parquet files with Git LFS"
+git add data/01-raw_data/hansard-corpus/hansard_corpus_1998_to_2022.parquet
+git commit -m "Add large Hansard Parquet file"
+git push origin main
 
 # Data {#sec-data}
 
 ## Overview
 
-We use the statistical programming language R [@citeR].... Our data [@shelter].... Following @tellingstories, we consider...
-
-Overview text
 
 ## Measurement
 	
@@ -58,42 +541,7 @@ Add graphs, tables and text. Use sub-sub-headings for each outcome variable or u
 
 
 
-Some of our data is of penguins (@fig-bills), from @palmerpenguins.
 
-```{r}
-#| label: fig-bills
-#| fig-cap: Bills of penguins
-#| echo: false
-
-ggplot(penguins, aes(x = island, fill = species)) +
-  geom_bar(alpha = 0.8) +
-  scale_fill_manual(values = c("darkorange","purple","cyan4"),
-                    guide = "none") +
-  theme_minimal() +
-  facet_wrap(~species, ncol = 1) +
-  coord_flip()
-```
-
-Talk more about it.
-
-And also planes (@fig-planes). (You can change the height and width, but don't worry about doing that until you have finished every other aspect of the paper - Quarto will try to make it look nice and the defaults usually work well once you have enough text.)
-
-```{r}
-#| label: fig-planes
-#| fig-cap: Relationship between wing length and width
-#| echo: false
-#| warning: false
-#| message: false
-
-analysis_data <- read_csv(here::here("data/02-analysis_data/analysis_data.csv"))
-
-analysis_data |> 
-  ggplot(aes(x = width, y = length)) +
-  geom_point(alpha = 0.8) +
-  theme_minimal() +
-  labs(x = "Wing width (mm)",
-       y = "Wing length (mm)")
-```
 
 Talk way more about it. 
 
@@ -112,9 +560,6 @@ Use sub-sub-headings for each outcome variable and feel free to combine a few in
 
 # Model
 
-The goal of our modelling strategy is twofold. Firstly,...
-
-Here we briefly describe the Bayesian analysis model used to investigate... Background details and diagnostics are included in [Appendix -@sec-model-details].
 
 ## Model set-up
 
@@ -129,7 +574,6 @@ y_i|\mu_i, \sigma &\sim \mbox{Normal}(\mu_i, \sigma) \\
 \sigma &\sim \mbox{Exponential}(1)
 \end{align}
 
-We run the model in R [@citeR] using the `rstanarm` package of @rstanarm. We use the default priors from `rstanarm`.
 
 
 ### Model justification
@@ -141,35 +585,7 @@ We can use maths by including latex between dollar signs, for instance $\theta$.
 
 # Results
 
-Our results are summarized in @tbl-modelresults.
 
-```{r}
-#| echo: false
-#| eval: true
-#| warning: false
-#| message: false
-
-library(rstanarm)
-
-first_model <-
-  readRDS(file = here::here("models/first_model.rds"))
-```
-
-```{r}
-#| echo: false
-#| eval: true
-#| label: tbl-modelresults
-#| tbl-cap: "Explanatory models of flight time based on wing width and wing length"
-#| warning: false
-
-modelsummary::modelsummary(
-  list(
-    "First model" = first_model
-  ),
-  statistic = "mad",
-  fmt = 2
-)
-```
 
 
 
@@ -203,51 +619,8 @@ Weaknesses and next steps should also be included.
 
 ## Posterior predictive check
 
-In @fig-ppcheckandposteriorvsprior-1 we implement a posterior predictive check. This shows...
-
-In @fig-ppcheckandposteriorvsprior-2 we compare the posterior with the prior. This shows... 
-
-```{r}
-#| eval: true
-#| echo: false
-#| message: false
-#| warning: false
-#| label: fig-ppcheckandposteriorvsprior
-#| layout-ncol: 2
-#| fig-cap: "Examining how the model fits, and is affected by, the data"
-#| fig-subcap: ["Posterior prediction check", "Comparing the posterior with the prior"]
-
-pp_check(first_model) +
-  theme_classic() +
-  theme(legend.position = "bottom")
-
-posterior_vs_prior(first_model) +
-  theme_minimal() +
-  scale_color_brewer(palette = "Set1") +
-  theme(legend.position = "bottom") +
-  coord_flip()
-```
-
 ## Diagnostics
 
-@fig-stanareyouokay-1 is a trace plot. It shows... This suggests...
-
-@fig-stanareyouokay-2 is a Rhat plot. It shows... This suggests...
-
-```{r}
-#| echo: false
-#| eval: true
-#| message: false
-#| warning: false
-#| label: fig-stanareyouokay
-#| fig-cap: "Checking the convergence of the MCMC algorithm"
-#| fig-subcap: ["Trace plot", "Rhat plot"]
-#| layout-ncol: 2
-
-plot(first_model, "trace")
-
-plot(first_model, "rhat")
-```
 
 
 
