@@ -13,6 +13,24 @@ number-sections: true
 bibliography: references.bib
 ---
 
+# Introduction {#sec-introduction}
+
+Although interjections are officially prohibited during a member's speech in the Australian Parliament, interruptions still occur frequently, particularly during heated debates often fueled by political disagreements [@aphInterruptions2025]. This raises crucial questions about gender dynamics within the context of parliamentary debates in Australia. Concerns are growing regarding whether women are disproportionately interrupted compared to men, highlighting potential underlying biases that could influence the effectiveness and fairness of parliamentary proceedings.
+
+There has been considerable research on speech patterns and gender-based interruptions in government speeches across various countries. For instance, during U.S. Supreme Court confirmation hearings, female and minority nominees are interrupted more frequently than their male and white counterparts [@genderRaceSCCHearings2024]. Additionally, in the US Congress, women also experienced more interruptions than men, especially during discussions of women’s issues, where women are more than twice as likely to be interrupted compared to non-gendered topics [@genderInterruptionsCongress2022]. In the Ecuadorian Congress, female legislators not only deliver fewer speeches but also speak for shorter durations compared to their male peers. Furthermore, women often wait longer to regain the floor after interruptions, leading them to strategically shorten their speeches to minimize further disruptions. However, women in authoritative positions can mitigate some of these interruption-related penalties, with senior women's speeches often exceeding those of men in length when they achieve comparable levels of experience or hold significant roles [@vera2021politics].
+
+Contrastingly, studies of the Australian High Court reveal a different dynamic [@jacobiPredictabilityInterruptions]. The result suggested that contrary to the U.S. Supreme Court, there is no significant difference between female and male justices regarding interruptions. Although women experience a higher rate of interruptions relative to their speaking time, the subtlety of this effect suggests that gender dynamics within the Australian court might be more balanced compared to the U.S. Supreme Court. This highlights the differences in how judicial interactions are influenced by gender across different legal systems.
+
+Building on existing literature suggesting that the Australian High Court may exhibit better gender dynamics than its counterparts in the US, we aim to delve deeper into the issue of gender-based interruptions within the Australian Parliament. Utilizing the Australian Hansard, the official written record of parliamentary debates which has been digitized by Lindsay Katz and Rohan Alexander, we have access to comprehensive records of all parliamentary proceedings from 1998 to 2022 [@katz2023digitization]. From the dataset, we aim to analyze the frequency and context of interruptions based on gender. Specifically, our study will focus on comparing the rates at which male and female parliamentarians are interrupted during their speeches.
+
+The remainder of this paper is structured as follows: @sec-data demonstrates the data used for this paper, @sec-model describes, justifies, and explains my model, @sec-results highlights the results of the predictions using tables and graphs, and @sec-discussion contains important implications and conclusions based on the findings.
+
+# Data {#sec-data}
+
+# Model {#sec-model}
+# Results {#sec-results}
+
+
 ```{r}
 #| include: false
 #| warning: false
@@ -28,6 +46,9 @@ library(knitr)
 library(tibble)
 library(gt)
 library(patchwork)
+library(kableExtra)
+library(dplyr)
+library(stringr)
 
 
 ```
@@ -46,9 +67,10 @@ hansard_corpus <- read_parquet(here::here("data/02-analysis_data/cleaned_data.pa
 #| warning: false
 #| message: false
 # View the first few rows
-head(hansard_corpus)
+head(hansard_corpus, 150)
 
 ```
+
 
 
 ```{r}
@@ -56,6 +78,7 @@ head(hansard_corpus)
 #| warning: false
 #| message: false
 summary(hansard_corpus)
+
 ```
 
 
@@ -129,6 +152,10 @@ final_results %>%
     data_row.padding = px(5),
     table.border.top.color = "gray",
     table.border.bottom.color = "gray"
+  )%>%
+  tab_style(
+    style = cell_text(align = "left"),  # Align text to the left
+    locations = cells_body(columns = everything())  # Apply to all columns in the body
   )
 
 ```
@@ -178,7 +205,7 @@ ggplot(final_data, aes(x = year, y = total_interruptions, color = gender)) +
   geom_line(size = 1.2) +  # Thicker lines for better visibility
   geom_point(size = 2) +  # Larger points to highlight data
   labs(
-    title = "Yearly Interruptions in Australian Parliament by Gender",
+    title = "Yearly Interruptions in Australian\nParliament by Gender",
     x = "Year",
     y = "Total Interruptions",
     color = "Gender"
@@ -189,7 +216,7 @@ ggplot(final_data, aes(x = year, y = total_interruptions, color = gender)) +
     legend.position = "top",  # Move legend to the top
     legend.title = element_text(size = 10, face = "bold"),  # Bold legend title
     legend.text = element_text(size = 8),  # Adjust legend text size
-    plot.title = element_text(size = 14, face = "bold"),  # Bold title
+    plot.title = element_text(size = 14, face = "bold",  hjust = 0.5),  # Bold title
     axis.title = element_text(size = 12),  # Axis title size
     axis.text = element_text(size = 11)  # Axis text size
   ) +
@@ -238,7 +265,7 @@ interruptions_by_year_all <- hansard_corpus %>%
   )
 
 # Combine data
-final_data <- bind_rows(interruptions_by_year_gender, interruptions_by_year_all)
+final_data1 <- bind_rows(interruptions_by_year_gender, interruptions_by_year_all)
 
 ```
 
@@ -249,7 +276,7 @@ final_data <- bind_rows(interruptions_by_year_gender, interruptions_by_year_all)
 #| label: fig-2
 #| fig-cap: "Yearly Interruptions Proportions in Australian Parliament by Gender"
 
-ggplot(final_data, aes(x = year, y = interruption_proportion, color = gender)) +
+ggplot(final_data1, aes(x = year, y = interruption_proportion, color = gender)) +
   geom_line(size = 1.2) +  # Thicker lines for better visibility
   geom_point(size = 2) +  # Larger points to highlight data
   labs(
@@ -277,6 +304,320 @@ ggplot(final_data, aes(x = year, y = interruption_proportion, color = gender)) +
 
 To provide a fair comparison of interruptions across different genders within the Australian Parliament, we normalize the data by calculating proportions. This method addresses the gender imbalance in parliament, ensuring that the analysis reflects the frequency of interruptions relative to each gender's representation. @fig-2 presents the proportions of speeches interrupted by gender. It indicates that male speakers had a higher proportion of their speeches interrupted, especially during the mid-2000s to early 2010s, though the gap between genders has narrowed over time. The proportion of interruptions for female speakers generally mirrors these fluctuations, implying that specific topics or periods may have incited more active parliamentary interactions. The "Unknown" gender shows minimal changes, highlighting its limited data representation. This analysis points out both the consistency and evolution of gender dynamics within parliamentary debates over the years.
 
+```{r}
+#| include: false
+#| warning: false
+#| message: false
+print(final_data1)
+
+```
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+#| label: fig-2_chamber
+#| fig-cap: "Yearly Interruptions Proportions in Australian Parliament by Gender (Chamber)"
+
+no_fedchamb <- hansard_corpus %>%
+  filter(fedchamb_flag == 0)
+
+# Group by year and gender to summarize interruptions
+interruptions_by_year_gender <- no_fedchamb %>%
+  group_by(year, gender) %>%
+  summarise(
+    total_interruptions = sum(interject, na.rm = TRUE),
+    total_speeches = n(),
+    .groups = 'drop'
+  ) %>%
+  mutate(
+    interruption_proportion = total_interruptions / total_speeches
+  )
+
+# Calculate interruptions for all genders combined per year
+interruptions_by_year_all <- no_fedchamb %>%
+  group_by(year) %>%
+  summarise(
+    total_interruptions = sum(interject, na.rm = TRUE),
+    total_speeches = n(),
+    .groups = 'drop'
+  ) %>%
+  mutate(
+    gender = "All",
+    interruption_proportion = total_interruptions / total_speeches
+  )
+
+# Combine the gender-specific and overall data
+final_data2 <- bind_rows(interruptions_by_year_gender, interruptions_by_year_all)
+
+# Plotting the interruptions proportions by year and gender
+ggplot(final_data2, aes(x = year, y = interruption_proportion, color = gender)) +
+  geom_line(size = 1.2) +  # Use thicker lines for better visibility
+  geom_point(size = 2) +  # Use larger points to highlight data points
+  labs(
+    title = "Yearly Interruptions Proportions\nin Australian Parliament by Gender (Chamber)",
+    x = "Year",
+    y = "Total Interruptions Proportions",
+    color = "Gender"
+  ) +
+  scale_color_brewer(palette = "Set2") +  # Use a colorblind-friendly palette
+  theme_minimal(base_size = 14) +  # Use a minimal theme with readable base font size
+  theme(
+    legend.position = "top",  # Position legend at the top for better accessibility
+    legend.title = element_text(size = 10, face = "bold"),  # Bold the legend title
+    legend.text = element_text(size = 8),  # Set legend text size
+    plot.title = element_text(size = 14, face = "bold", hjust = 0.5),  # Center and bold the plot title
+    axis.title = element_text(size = 12),  # Set axis title size
+    axis.text = element_text(size = 11)  # Set axis text size
+  ) +
+  scale_x_continuous(breaks = seq(min(final_data$year), max(final_data$year), by = 5))  # Set x-axis breaks every 5 years
+
+```
+```{r}
+#| include: false
+#| warning: false
+#| message: false
+# Displaying the table of final data
+print(final_data2)
+
+```
+
+```{r}
+#| include: false
+#| warning: false
+#| message: false
+# Pivot to get male and female data on the same row
+comparison_data <- final_data2 %>%
+  pivot_wider(
+    id_cols = year,
+    names_from = gender,
+    values_from = interruption_proportion
+  )
+
+# Determine which gender had more interruptions per year
+yearly_comparison <- comparison_data %>%
+  mutate(
+    More_Interrupted_Gender = case_when(
+      Male > Female ~ "Male",
+      Female > Male ~ "Female",
+      TRUE ~ "Equal"
+    )
+  )
+
+# Count the number of years each gender was interrupted more
+gender_counts <- yearly_comparison %>%
+  count(More_Interrupted_Gender)
+
+```
+
+```{r}
+#| include: false
+#| warning: false
+#| message: false
+# Determine which gender had more interruptions per year
+yearly_comparison <- comparison_data %>%
+  mutate(
+    More_Interrupted_Gender = case_when(
+      Male > Female ~ "Male",
+      Female > Male ~ "Female",
+      TRUE ~ "Equal"  # This handles cases where the interruption proportions are the same
+    )
+  ) %>%
+  select(year, More_Interrupted_Gender)  # Select only the year and the more interrupted gender columns
+
+# Print the simplified table
+print(yearly_comparison)
+```
+
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+#| tbl-cap: "Gender Interruption Proportions Annual Comparison Across General and Chamber"
+#| label: tbl-compareyear
+# Prepare the data
+comparison_all <- final_data1 %>%
+  pivot_wider(
+    id_cols = year,
+    names_from = gender,
+    values_from = interruption_proportion
+  ) %>%
+  mutate(
+    More_Interrupted_Gender_All = case_when(
+      Male > Female ~ "Male",
+      Female > Male ~ "Female",
+      TRUE ~ "Equal"
+    )
+  )
+
+comparison_chamber <- final_data2 %>%
+  pivot_wider(
+    id_cols = year,
+    names_from = gender,
+    values_from = interruption_proportion
+  ) %>%
+  mutate(
+    More_Interrupted_Gender_Chamber = case_when(
+      Male > Female ~ "Male",
+      Female > Male ~ "Female",
+      TRUE ~ "Equal"
+    )
+  )
+
+
+# Assuming final_comparison is prepared as follows
+final_comparison <- comparison_all %>%
+  select(year, More_Interrupted_Gender_All) %>%
+  left_join(comparison_chamber %>% select(year, More_Interrupted_Gender_Chamber), by = "year")
+
+final_comparison %>%
+  gt %>%
+  cols_label(
+    year = "Year",
+    More_Interrupted_Gender_All = "More Interrupted Gender All",
+    More_Interrupted_Gender_Chamber = "More Interrupted Gender Chamber")%>%
+  tab_style(
+    style = cell_text(align = "left"),  # Align text to the left
+    locations = cells_body(columns = everything())  # Apply to all columns in the body
+  )
+
+
+
+
+
+
+```
+
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+#| label: fig-compare
+#| fig-cap: "Yearly Interruptions Proportions in Australian Parliament by Gender"
+
+# Original dataset, no condition on fedchamb_flag
+interruptions_original <- hansard_corpus %>%
+  filter(gender %in% c("Male", "Female")) %>%
+  mutate(
+    date = as.Date(date, format = "%Y-%m-%d"),
+    year = if_else(is.na(date), NA_integer_, year(date))
+  ) %>%
+  group_by(year, gender) %>%
+  summarise(
+    total_interruptions = sum(interject, na.rm = TRUE),
+    total_speeches = n(),
+    .groups = 'drop'
+  ) %>%
+  mutate(
+    interruption_proportion = total_interruptions / total_speeches,
+    condition = "All Data"
+  )
+
+# Dataset with fedchamb_flag == 0
+interruptions_fedchamb_flag_0 <- hansard_corpus %>%
+  filter(gender %in% c("Male", "Female"), fedchamb_flag == 0) %>%
+  mutate(
+    date = as.Date(date, format = "%Y-%m-%d"),
+    year = if_else(is.na(date), NA_integer_, year(date))
+  ) %>%
+  group_by(year, gender) %>%
+  summarise(
+    total_interruptions = sum(interject, na.rm = TRUE),
+    total_speeches = n(),
+    .groups = 'drop'
+  ) %>%
+  mutate(
+    interruption_proportion = total_interruptions / total_speeches,
+    condition = "fedchamb_flag = 0"
+  )
+
+# Combine the datasets
+final_data3 <- bind_rows(interruptions_original, interruptions_fedchamb_flag_0)
+
+# Adjust labels for condition and linetype
+ggplot(final_data3, aes(x = year, y = interruption_proportion, color = gender, linetype = condition)) +
+  geom_line(size = 1.2) +
+  geom_point(size = 2) +
+  labs(
+    title = "Yearly Interruptions Proportions in\nAustralian Parliament by Gender",
+    subtitle = "Comparing All Data vs. Chamber Data Only",
+    x = "Year",
+    y = "Interruption Proportion",
+    color = "Gender",
+    linetype = "Dataset Type"
+  ) +
+  scale_color_brewer(palette = "Set2") +
+  scale_linetype_manual(values = c("solid", "dotted"), 
+                        labels = c("All", "Chamber")) +
+  theme_minimal(base_size = 14) +
+  theme(
+    legend.position = "top",
+    legend.title = element_text(size = 10, face = "bold"),
+    legend.text = element_text(size = 8),
+    plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+    plot.subtitle = element_text(size = 12, face = "italic", hjust = 0.5),
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 11)
+  ) +
+  scale_x_continuous(breaks = seq(min(final_data3$year), max(final_data3$year), by = 5))  # Adjust x-axis breaks
+
+
+
+
+
+```
+
+Only analyzing Chamber members, @fig-2_chamber again illustrates interruptions in the Australian Parliament from 1998 to 2022, categorized by gender. To distinguish the differences across the two figures, @fig-compare contains both the interruptions for all data and Chamber member data. While the interruption patterns in the chamber-only data in @fig-2_chamber largely mirror those observed in the comprehensive dataset @fig-2, there are slight increases in the interruption proportions for women, indicating a potentially heightened level of disruption experienced by female members in non-federal chambers.
+
+@tbl-compareyear displays the more interrupted gender every year in the parliament and compares all members and only chamber members. While most years are the same, there is a notable shift in the gender experiencing more frequent interruptions from 2018 to 2020. In the broader dataset, males were more frequently interrupted; however, this pattern shifts in the non-federal chamber data, where females became the more interrupted gender during these years. This change highlights the variability in gender dynamics within different parliamentary environments and suggests that factors specific to non-federal chamber settings may influence these interaction patterns more significantly for female members.
+
+
+
+
+
+
+```{r}
+#| include: false
+#| warning: false
+#| message: false
+# Filter and aggregate data based on the 'question' flag and 'gender'
+interruptions_question_analysis <- hansard_corpus %>%
+  filter(gender %in% c("Male", "Female")) %>%
+  group_by(gender, is_question = as.factor(question)) %>%
+  summarise(
+    total_interruptions = sum(interject, na.rm = TRUE),
+    total_speeches = n(),
+    total_speeches = sum(total_speeches),
+    interruption_proportion = total_interruptions / total_speeches,
+    .groups = 'drop'
+  )
+
+# Print the resulting dataset to verify
+print(interruptions_question_analysis)
+
+```
+
+```{r}
+#| include: false
+#| warning: false
+#| message: false
+# Filter and aggregate data based on the 'question' flag and 'gender'
+interruptions_question_analysis <- hansard_corpus %>%
+  filter(gender %in% c("Male", "Female")) %>%
+  group_by(gender, is_answer = as.factor(answer)) %>%
+  summarise(
+    total_interruptions = sum(interject, na.rm = TRUE),
+    total_speeches = n(),
+    total_speeches = sum(total_speeches),
+    interruption_proportion = total_interruptions / total_speeches,
+    .groups = 'drop'
+  )
+
+# Print the resulting dataset to verify
+print(interruptions_question_analysis)
+```
 
 
 
@@ -352,7 +693,6 @@ interruptions_gender <- hansard_corpus %>%
     .groups = 'drop'
   )
 
-
 ```
 
 ```{r}
@@ -380,6 +720,7 @@ ggplot(interruptions_major_parties, aes(x = party, y = total_interruptions, fill
   )
 
 ```
+
 ```{r}
 #| include: false
 #| warning: false
@@ -482,6 +823,307 @@ plot2 <- ggplot(interruptions_normalized, aes(x = party, y = interruption_probab
 
 
 
+```{r}
+#| include: false
+#| warning: false
+#| message: false
+# Calculate basic summary statistics for in.gov
+in_gov_stats <- hansard_corpus %>%
+  summarise(
+    Count_In_Gov = sum(in.gov == 1, na.rm = TRUE),
+    Count_Not_In_Gov = sum(in.gov == 0, na.rm = TRUE),
+    Count_NA = sum(is.na(in.gov)),
+    Total = n()
+  )
+
+print(in_gov_stats)
+
+```
+
+```{r}
+#| include: false
+#| warning: false
+#| message: false
+# Calculate basic summary statistics for in.gov
+interject_stats <- hansard_corpus %>%
+  summarise(
+    Count_Interject = sum(interject == 1, na.rm = TRUE),
+    Count_No_Interject = sum(interject == 0, na.rm = TRUE),
+    Count_NA = sum(is.na(interject)),
+    Total = n()
+  )
+
+print(interject_stats)
+```
+
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+#| tbl-cap: "Interruption Summary by Government Status (All)"
+#| label: tbl-ingov1
+
+# Assume that interruption_summary is already prepared as previously coded
+interruption_summary <- hansard_corpus %>%
+  mutate(
+    in_gov = factor(in.gov, levels = c(0, 1), labels = c("In Opposition", "In Government")),
+    interject = factor(interject, levels = c(0, 1), labels = c("No", "Yes"))
+  ) %>%
+  group_by(in_gov, interject) %>%
+  summarise(
+    Count = n(),
+    .groups = 'drop'
+  ) %>%
+  arrange(in_gov, desc(interject)) %>%
+  rename(
+    `Government Status` = in_gov,
+    `Interruption` = interject,
+    `Count` = Count
+  )
+
+
+# Create a clean and professional table
+interruption_summary %>%
+  gt() %>%
+  tab_style(
+    style = cell_text(align = "left"),  # Align text to the left
+    locations = cells_body(columns = everything())  # Apply to all columns in the body
+  )
+
+
+```
+
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+#| tbl-cap: "Interruption Summary by Government Status in Non-Federal Chamber Sessions"
+#| label: tbl-ingov2
+
+
+# Assume that interruption_summary is already prepared as previously coded
+interruption_summary <- hansard_corpus %>%
+  filter(fedchamb_flag == 0) %>%
+  mutate(
+    in_gov = factor(in.gov, levels = c(0, 1), labels = c("In Opposition", "In Government")),
+    interject = factor(interject, levels = c(0, 1), labels = c("No", "Yes"))
+  ) %>%
+  group_by(in_gov, interject) %>%
+  summarise(
+    Count = n(),
+    .groups = 'drop'
+  ) %>%
+  arrange(in_gov, desc(interject)) %>%
+  rename(
+    `Government Status` = in_gov,
+    `Interruption` = interject,
+    `Count` = Count
+  )
+interruption_summary %>%
+  gt() %>%
+  tab_style(
+    style = cell_text(align = "left"),  # Align text to the left
+    locations = cells_body(columns = everything())  # Apply to all columns in the body
+  )
+
+
+```
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+#| label: fig-gov
+#| fig-cap: "Count of Interruptions by Government Status and Gender"
+
+# Prepare the data with absolute counts
+interruption_counts <- hansard_corpus %>%
+  filter(gender %in% c("Male", "Female")) %>%
+  filter(fedchamb_flag == 0) %>%
+  mutate(
+    in_gov = factor(ifelse(is.na(in.gov), "NA", ifelse(in.gov == 1, "In Government", "In Opposition")),
+                    levels = c("In Opposition", "In Government", "NA")),
+    interject = factor(interject, levels = c(0, 1), labels = c("No", "Yes"))
+  ) %>%
+  group_by(in_gov, interject, gender) %>%
+  summarise(
+    Count = n(),
+    .groups = 'drop'
+  )
+
+
+# Plot using ggplot2 with updated colors and adjusted x-axis labels
+ggplot(interruption_counts, aes(x = in_gov, y = Count, fill = interject)) +
+  geom_bar(stat = "identity", position = "stack") +
+  facet_wrap(~ gender, scales = "free_y") +
+  labs(
+    title = "Interruptions Count by Government Status and Gender",
+    x = "Government Status",
+    y = "Count of Interruptions",
+    fill = "Interruption Occurred"
+  ) +
+  scale_fill_manual(values = c("No" = "steelblue", "Yes" = "salmon")) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 0, vjust = 2, hjust = 0.5), # Adjust label positioning
+    plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+    legend.position = "bottom"
+  )
+
+  
+```
+
+
+@tbl-ingov1, @tbl-ingov2, and @fig-gov offer a detailed look at interruptions during parliamentary sessions, categorized by members' government status and gender. Notably, interruptions are extremely rare for members with clearly identified status. This indicates a potential correlation between established government status and more orderly interactions, highlighting the importance of role clarity in maintaining decorum.
+
+However, the significant amount of missing data makes reliable inferences about the true nature of interruptions and their correlation with member status challenging. The vast majority of interruptions occur when the government status of the speaker is unknown. This trend is consistent across both the comprehensive dataset and the subset limited to non-federal chamber sessions. Interruptions are exceedingly rare for members whose government status is known, with only 22 interruptions for those "In Government" and an even fewer 4 for those "In Opposition" across all data. Due to this substantial amount of missing information, it is very difficult to firmly conclude whether our observed patterns hold true.
+
+
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+#| tbl-cap: "Summary of Parliamentary Session Activities and Interruptions"
+#| label: tbl-qa_interrupt1
+# Assuming hansard_corpus is already loaded and prepped
+summary_stats <- hansard_corpus %>%
+  mutate(
+    question_numeric = as.numeric(as.character(question)),
+    answer_numeric = as.numeric(as.character(answer))
+  ) %>%
+  summarise(
+    Questions = sum(question_numeric, na.rm = TRUE),
+    Answers = sum(answer_numeric, na.rm = TRUE),
+    Total_Interruptions = sum(interject, na.rm = TRUE),
+    Interruptions_During_Questions = sum(interject[question_numeric == 1], na.rm = TRUE),
+    Interruptions_During_Answers = sum(interject[answer_numeric == 1], na.rm = TRUE)
+  )
+
+
+summary_stats %>%
+  gt() %>%
+  cols_label(
+    Questions = "Questions",
+    Answers = "Answers",
+    Total_Interruptions = "Total Interruptions",
+    Interruptions_During_Questions = "Question Interrupted",
+    Interruptions_During_Answers = "Answer Interrupted"
+  ) %>%
+  tab_style(
+    style = cell_text(align = "left"),
+    locations = cells_body(columns = everything())
+  ) %>%
+  tab_options(
+    table.width = pct(100),  # Set the table width to 100% of the container
+    table.align = "left"  # Align the table to the left of the container
+  ) %>%
+  tab_style(
+    style = cell_text(align = "left"),  # Align text to the left
+    locations = cells_body(columns = everything())  # Apply to all columns in the body
+  )
+  
+
+
+```
+
+
+
+```{r}
+#| include: false
+#| warning: false
+#| message: false
+# Review entries where questions or answers are marked
+question_instances <- hansard_corpus %>%
+  filter(question == 1)
+print(question_instances)
+```
+
+
+
+```{r}
+#| include: false
+#| warning: false
+#| message: false
+# Filter and aggregate data based on the 'question' flag and 'gender'
+interruptions_question_analysis <- hansard_corpus %>%
+  filter(gender %in% c("Male", "Female")) %>%
+  group_by(gender, is_question = as.factor(question)) %>%
+  summarise(
+    total_interruptions = sum(interject, na.rm = TRUE),
+    total_speeches = n(),
+    total_speeches = sum(total_speeches),
+    interruption_proportion = total_interruptions / total_speeches,
+    .groups = 'drop'
+  )
+
+# Print the resulting dataset to verify
+print(interruptions_question_analysis)
+
+```
+
+```{r}
+#| include: false
+#| warning: false
+#| message: false
+# Filter and aggregate data based on the 'question' flag and 'gender'
+interruptions_question_analysis <- hansard_corpus %>%
+  filter(gender %in% c("Male", "Female")) %>%
+  group_by(gender, is_answer = as.factor(answer)) %>%
+  summarise(
+    total_interruptions = sum(interject, na.rm = TRUE),
+    total_speeches = n(),
+    total_speeches = sum(total_speeches),
+    interruption_proportion = total_interruptions / total_speeches,
+    .groups = 'drop'
+  )
+
+# Print the resulting dataset to verify
+print(interruptions_question_analysis)
+```
+
+
+```{r}
+#| include: false
+#| warning: false
+#| message: false
+# Assuming your dataset is named 'hansard_corpus'
+# Calculate the word count for each 'body' entry
+hansard_corpus1 <- hansard_corpus %>%
+  mutate(word_count = str_count(body, "\\b\\w+\\b"))
+
+# Print the data to see the word counts
+head(hansard_corpus1)
+```
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+#| label: fig-gov3
+#| fig-cap: "Histogram of Word Counts in Speeches (Up to 250 Words)"
+
+hansard_corpus1 <- hansard_corpus1 %>%
+  filter(gender %in% fedchamb_flag == 0) 
+
+# Enhanced histogram with interjection data
+ggplot(hansard_corpus1 %>% filter(word_count <= 250), aes(x = word_count, fill = as.factor(interject))) +
+  geom_histogram(binwidth = 25, position = "identity", alpha = 0.6) +
+  labs(
+    title = "Histogram of Word Counts in Speeches (Up to 250 Words)",
+    x = "Word Count",
+    y = "Frequency",
+    fill = "Interjection Occurred"
+  ) +
+  scale_fill_manual(values = c("0" = "steelblue", "1" = "salmon"), labels = c("No", "Yes")) +
+  theme_minimal() +
+  theme(legend.position = "top") +
+  theme(
+   plot.title = element_text(size = 14, face = "bold", hjust = 0.5))
+```
+@fig-gov3 shows word counts in speeches divided into two categories: speeches where an interjection occurred and those without any interruptions. We can see that speeches without interruptions (blue bars) are more frequent across all word count ranges, especially as the number of words increases. Conversely, interrupted speeches (red bars) are less frequent and generally shorter. This trend suggests that interruptions tend to happen in shorter speeches or possibly cause speakers to shorten their remarks. This graph gives a clear visual indication of how interruptions might disrupt or influence the length of parliamentary speeches.
 
 
 
@@ -495,6 +1137,82 @@ plot2 <- ggplot(interruptions_normalized, aes(x = party, y = interruption_probab
 
 
 
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+#| label: tbl-gov4
+#| tbl-cap: "Gender-Based Interruptions and Word Count"
+# Assuming hansard_corpus1 is already loaded and prepared
+# First, filter to include only speeches up to 1000 words and only Male or Female
+filtered_data <- hansard_corpus1 %>%
+  filter(gender %in% c("Male", "Female"))
+
+# Group by gender and whether there was an interjection
+summary_table <- filtered_data %>%
+  group_by(gender, interject) %>%
+  summarise(
+    num_speeches = n(),
+    average_words = mean(word_count, na.rm = TRUE),
+    min_words = min(word_count, na.rm = TRUE),
+    max_words = max(word_count, na.rm = TRUE),
+    .groups = 'drop'
+  )
+
+summary_table %>%
+  gt()%>%
+  tab_style(
+    style = cell_text(align = "left"),  # Align text to the left
+    locations = cells_body(columns = everything())  # Apply to all columns in the body
+  ) %>%
+  cols_label(
+    gender = "Gender",
+    interject = "Interruption",
+    num_speeches = "Total Speeches",
+    average_words = "Average Words",
+    min_words = "Min Words",
+    max_words = "Max Words")
+
+
+```
+
+
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+#| label: fig-gov5
+#| fig-cap: "Gender-Based Interruptions and Word Count"
+# Bar plot for total speeches with real numbers on the y-axis
+ggplot(summary_table, aes(x = gender, y = num_speeches, fill = factor(interject))) +
+  geom_bar(stat = "identity", position = "dodge") +
+  scale_fill_manual(values = c("steelblue", "salmon"), labels = c("No", "Yes")) +
+  scale_y_continuous(labels = scales::comma) +  # Display real numbers on the y-axis
+  labs(
+    title = "Total Speeches by Gender and Interruption",
+    x = "Gender",
+    y = "Total Speeches",
+    fill = "Interruption"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    legend.position = "top",
+    plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 10)
+  )
+
+```
+@tbl-gov4 and @fig-gov5 highlights that, on average, females tend to speak longer than males before an interruption occurs. For uninterrupted speeches, females average 560.72 words compared to 448.67 words for males. Even when interrupted, female speeches still have a higher average word count (37.76 words) than interrupted male speeches (28.76 words). This suggests that while females may face greater challenges overall, they tend to hold the floor longer before interruptions occur. However, the substantial drop in average word count for both genders during interruptions shows the disruptive impact, with females experiencing a steeper decline relative to their uninterrupted averages. This pattern indicates that while females often manage to speak at greater length initially, interruptions disproportionately diminish their overall speaking opportunities.
+
+
+
+
+
+
+# Discussion {#sec-discussion}
 
 
 
@@ -526,7 +1244,6 @@ git add data/01-raw_data/hansard-corpus/hansard_corpus_1998_to_2022.parquet
 git commit -m "Add large Hansard Parquet file"
 git push origin main
 
-# Data {#sec-data}
 
 ## Overview
 
