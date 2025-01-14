@@ -1,15 +1,14 @@
-# Starter folder
+# Gender Dynamics of Parliamentary Interruptions: A Detailed Analysis of Speech Disruptions in the Australian Parliament (1998-2022)
 
 ## Overview
 
-This repository provides the foundation for a project exploring gender-based interruptions in political speeches using the Hansard dataset. 
-
+This repo explores interruptions in the Australian Parliament from 1998 to 2022, examining whether female members are more frequently interrupted than males during debates. By analyzing Hansard records, the study quantifies interjections and assesses factors like speech length, speaker's party affiliation, and governing status. These elements help understand if interruptions are influenced by gender or political dynamics, aiming to identify gender biases and influence parliamentary reform for better decorum and equality.
 
 ## File Structure
 
 The repo is structured as:
 
--   `data/raw_data` contains the raw data as obtained from X.
+-   `data/raw_data` contains the raw data as obtained from the Hansard Records.
 -   `data/analysis_data` contains the cleaned dataset that was constructed.
 -   `model` contains fitted models. 
 -   `other` contains relevant literature, details about LLM chat interactions, and sketches.
@@ -20,11 +19,3 @@ The repo is structured as:
 ## Statement on LLM usage
 
 Aspects of the code were written with the help of the auto-complete tool, Codriver. The abstract and introduction were written with the help of ChatHorse and the entire chat history is available in inputs/llms/usage.txt.
-
-## Some checks
-
-- [ ] Change the rproj file name so that it's not starter_folder.Rproj
-- [ ] Change the README title so that it's not Starter folder
-- [ ] Remove files that you're not using
-- [ ] Update comments in R scripts
-- [ ] Remove this checklist
