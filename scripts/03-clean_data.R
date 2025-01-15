@@ -1,6 +1,6 @@
 #### Preamble ####
 # Purpose: Cleans the raw data 
-# Author: Rohan Alexander Hannah Yu
+# Author: Rohan Alexander, Hannah Yu
 # Date: 2 October, 2024
 # Contact: rohan.alexander@utoronto.ca, realhannah.yu@mail.utoronto.ca
 # License: MIT
