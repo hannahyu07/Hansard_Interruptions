@@ -1,5 +1,5 @@
 ---
-title: "Voices in Parliament: Analyzing Interruptions Across Gender in the Australian Political Landscape"
+title: "Gender Dynamics of Parliamentary Interruptions: A Detailed Analysis of Speech Disruptions in the Australian Parliament (1998-2022)"
 subtitle: "My subtitle if needed"
 author: 
   - Hannah Yu
@@ -74,7 +74,6 @@ head(hansard_corpus, 150)
 
 
 ```{r}
-#| include: false
 #| warning: false
 #| message: false
 summary(hansard_corpus)
@@ -967,7 +966,7 @@ ggplot(interruption_counts, aes(x = in_gov, y = Count, fill = interject)) +
   scale_fill_manual(values = c("No" = "steelblue", "Yes" = "salmon")) +
   theme_minimal() +
   theme(
-    axis.text.x = element_text(angle = 0, vjust = 2, hjust = 0.5), # Adjust label positioning
+    axis.text.x = element_text(size = 7, angle = 0, vjust = 2, hjust = 0.5), # Adjust label positioning
     plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
     legend.position = "bottom"
   )
@@ -1032,7 +1031,6 @@ summary_stats %>%
 
 
 ```{r}
-#| include: false
 #| warning: false
 #| message: false
 # Review entries where questions or answers are marked
@@ -1112,7 +1110,7 @@ hansard_corpus1 <- hansard_corpus1 %>%
 ggplot(hansard_corpus1 %>% filter(word_count <= 250), aes(x = word_count, fill = as.factor(interject))) +
   geom_histogram(binwidth = 25, position = "identity", alpha = 0.6) +
   labs(
-    title = "Histogram of Word Counts in Speeches (Up to 250 Words)",
+    title = "Histogram of Word Counts in Speeches",
     x = "Word Count",
     y = "Frequency",
     fill = "Interjection Occurred"
@@ -1186,12 +1184,12 @@ summary_table %>%
 #| label: fig-gov5
 #| fig-cap: "Gender-Based Interruptions and Word Count"
 # Bar plot for total speeches with real numbers on the y-axis
-ggplot(summary_table, aes(x = gender, y = num_speeches, fill = factor(interject))) +
+ggplot(summary_table, aes(x = gender, y = average_words, fill = factor(interject))) +
   geom_bar(stat = "identity", position = "dodge") +
   scale_fill_manual(values = c("steelblue", "salmon"), labels = c("No", "Yes")) +
   scale_y_continuous(labels = scales::comma) +  # Display real numbers on the y-axis
   labs(
-    title = "Total Speeches by Gender and Interruption",
+    title = "Gender-Based Interruptions and Word Count",
     x = "Gender",
     y = "Total Speeches",
     fill = "Interruption"

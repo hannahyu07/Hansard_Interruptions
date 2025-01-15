@@ -1,52 +1,34 @@
 #### Preamble ####
-# Purpose: Simulates a dataset of Australian electoral divisions, including the 
-  #state and party that won each division.
-# Author: Rohan Alexander
-# Date: 26 September 2024
-# Contact: rohan.alexander@utoronto.ca
+# Purpose: Simulates a dataset of Australian parliament speakers' speeches. 
+# Author: Hannah Yu
+# Date: 13 January 2025
+# Contact: realhannah.yu@mail.utoronto.ca
 # License: MIT
 # Pre-requisites: The `tidyverse` package must be installed
 # Any other information needed? Make sure you are in the `starter_folder` rproj
 
-
 #### Workspace setup ####
 library(tidyverse)
+library(dplyr)
 set.seed(853)
 
 
 #### Simulate data ####
-# State names
-states <- c(
-  "New South Wales",
-  "Victoria",
-  "Queensland",
-  "South Australia",
-  "Western Australia",
-  "Tasmania",
-  "Northern Territory",
-  "Australian Capital Territory"
+# Create a simulated dataset
+data <- tibble(
+  speaker_id = 1:100,  # Speaker numbers from 1 to 100
+  interject = rbinom(100, 1, 0.3),  # Dummy variable for interjection (30% probability)
+  gender = sample(c("Male", "Female"), 100, replace = TRUE),  # Randomly assign gender
+  chamber = sample(c("House of Representatives", "Federation Chamber"), 100, replace = TRUE),  # Randomly assign chamber
+  first_speech = rbinom(100, 1, 0.2),  # Dummy for first speech (20% probability)
+  date = sample(seq(as.Date('1998-01-01'), as.Date('2022-12-31'), by="day"), 100, replace = TRUE),  # Random dates between 1998 and 2022
+  party = sample(c("ALP", "LP", "Nats", "NP", "Other"), 100, replace = TRUE),  # Randomly assign party
+  year = sample(1998:2022, 100, replace = TRUE)  # Randomly assign year from 1998 to 2022
 )
-
-# Political parties
-parties <- c("Labor", "Liberal", "Greens", "National", "Other")
-
-# Create a dataset by randomly assigning states and parties to divisions
-analysis_data <- tibble(
-  division = paste("Division", 1:151),  # Add "Division" to make it a character
-  state = sample(
-    states,
-    size = 151,
-    replace = TRUE,
-    prob = c(0.25, 0.25, 0.15, 0.1, 0.1, 0.1, 0.025, 0.025) # Rough state population distribution
-  ),
-  party = sample(
-    parties,
-    size = 151,
-    replace = TRUE,
-    prob = c(0.40, 0.40, 0.05, 0.1, 0.05) # Rough party distribution
-  )
-)
-
 
 #### Save data ####
-write_csv(analysis_data, "data/00-simulated_data/simulated_data.csv")
+write_csv(data, "data/00-simulated_data/simulated_data.csv")
+
+
+
+print(nrow(data))  # This should output 100 if the data generation is correct

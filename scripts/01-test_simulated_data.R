@@ -1,9 +1,9 @@
 #### Preamble ####
 # Purpose: Tests the structure and validity of the simulated Australian 
   #electoral divisions dataset.
-# Author: Rohan Alexander
-# Date: 26 September 2024
-# Contact: rohan.alexander@utoronto.ca
+# Author: Hannah Yu
+# Date: 14 January 2025
+# Contact: realhannah.yu@mail.utoronto.ca
 # License: MIT
 # Pre-requisites: 
   # - The `tidyverse` package must be installed and loaded
@@ -14,6 +14,8 @@
 #### Workspace setup ####
 library(tidyverse)
 
+
+#### Load data for testing ####
 analysis_data <- read_csv("data/00-simulated_data/simulated_data.csv")
 
 # Test if the data was successfully loaded
@@ -23,60 +25,32 @@ if (exists("analysis_data")) {
   stop("Test Failed: The dataset could not be loaded.")
 }
 
-
-#### Test data ####
-
-# Check if the dataset has 151 rows
-if (nrow(analysis_data) == 151) {
-  message("Test Passed: The dataset has 151 rows.")
+# Check if the dataset has 100 rows
+if (nrow(analysis_data) == 100) {
+  message("Test Passed: The dataset has 100 rows.")
 } else {
-  stop("Test Failed: The dataset does not have 151 rows.")
+  stop("Test Failed: The dataset does not have 100 rows.")
 }
 
-# Check if the dataset has 3 columns
-if (ncol(analysis_data) == 3) {
-  message("Test Passed: The dataset has 3 columns.")
+# Check if the dataset has 8 columns
+if (ncol(analysis_data) == 8) {
+  message("Test Passed: The dataset has 8 columns.")
 } else {
-  stop("Test Failed: The dataset does not have 3 columns.")
+  stop("Test Failed: The dataset does not have 8 columns.")
 }
 
-# Check if all values in the 'division' column are unique
-if (n_distinct(analysis_data$division) == nrow(analysis_data)) {
-  message("Test Passed: All values in 'division' are unique.")
-} else {
-  stop("Test Failed: The 'division' column contains duplicate values.")
-}
+# Since there's no 'division' or 'state' column in your dataset, we'll skip those tests
 
-# Check if the 'state' column contains only valid Australian state names
-valid_states <- c("New South Wales", "Victoria", "Queensland", "South Australia", 
-                  "Western Australia", "Tasmania", "Northern Territory", 
-                  "Australian Capital Territory")
-
-if (all(analysis_data$state %in% valid_states)) {
-  message("Test Passed: The 'state' column contains only valid Australian state names.")
-} else {
-  stop("Test Failed: The 'state' column contains invalid state names.")
-}
-
-# Check if the 'party' column contains only valid party names
-valid_parties <- c("Labor", "Liberal", "Greens", "National", "Other")
-
-if (all(analysis_data$party %in% valid_parties)) {
-  message("Test Passed: The 'party' column contains only valid party names.")
-} else {
-  stop("Test Failed: The 'party' column contains invalid party names.")
-}
-
-# Check if there are any missing values in the dataset
-if (all(!is.na(analysis_data))) {
+# Check if there are no missing values in the dataset
+if (all(complete.cases(analysis_data))) {
   message("Test Passed: The dataset contains no missing values.")
 } else {
   stop("Test Failed: The dataset contains missing values.")
 }
 
-# Check if there are no empty strings in 'division', 'state', and 'party' columns
-if (all(analysis_data$division != "" & analysis_data$state != "" & analysis_data$party != "")) {
-  message("Test Passed: There are no empty strings in 'division', 'state', or 'party'.")
+# Check if there are no empty strings in 'party' and 'chamber' columns
+if (all(analysis_data$party != "" & analysis_data$chamber != "")) {
+  message("Test Passed: There are no empty strings in 'party' or 'chamber'.")
 } else {
   stop("Test Failed: There are empty strings in one or more columns.")
 }
