@@ -28,7 +28,3 @@ data <- tibble(
 
 #### Save data ####
 write_csv(data, "data/00-simulated_data/simulated_data.csv")
-
-
-
-print(nrow(data))  # This should output 100 if the data generation is correct
