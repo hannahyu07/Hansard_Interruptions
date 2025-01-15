@@ -1,4 +1,4 @@
-# Gender Dynamics of Parliamentary Interruptions: A Detailed Analysis of Speech Disruptions in the Australian Parliament (1998-2022)
+# Silenced in the Chamber: Analyzing Gendered Speech Interruptions in the Australian Parliament (1998–2022)
 
 ## Overview
 
