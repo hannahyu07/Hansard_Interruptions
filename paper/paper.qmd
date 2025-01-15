@@ -1,5 +1,5 @@
 ---
-title: "Gender Dynamics of Parliamentary Interruptions: A Detailed Analysis of Speech Disruptions in the Australian Parliament (1998-2022)"
+title: "Silenced in the Chamber: Analyzing Gendered Speech Interruptions in the Australian Parliament (1998–2022)"
 subtitle: "My subtitle if needed"
 author: 
   - Hannah Yu
