@@ -1,6 +1,5 @@
 ---
 title: "Silenced in the Chamber: Analyzing Gendered Speech Interruptions in the Australian Parliament (1998–2022)"
-subtitle: "My subtitle if needed"
 author: 
   - Hannah Yu
   - Rohan Alexander
@@ -74,6 +73,7 @@ head(hansard_corpus, 150)
 
 
 ```{r}
+#| include: false
 #| warning: false
 #| message: false
 summary(hansard_corpus)
@@ -1031,6 +1031,7 @@ summary_stats %>%
 
 
 ```{r}
+#| include: false
 #| warning: false
 #| message: false
 # Review entries where questions or answers are marked
@@ -1215,32 +1216,6 @@ ggplot(summary_table, aes(x = gender, y = average_words, fill = factor(interject
 
 
 
-# Introduction
-
-Overview paragraph
-
-Estimand paragraph
-
-Results paragraph
-
-Why it matters paragraph
-
-Telegraphing paragraph: The remainder of this paper is structured as follows. @sec-data....
-git config --global http.postBuffer 524288000
-
-git config --global http.postBuffer 629145600
-
-
-git reset --soft HEAD~1
-
-
-git lfs install
-git lfs track "*.parquet"
-git add .gitattributes
-git commit -m "Track large parquet files with Git LFS"
-git add data/01-raw_data/hansard-corpus/hansard_corpus_1998_to_2022.parquet
-git commit -m "Add large Hansard Parquet file"
-git push origin main
 
 
 ## Overview
@@ -1298,7 +1273,6 @@ We expect a positive relationship between the size of the wings and time spent a
 We can use maths by including latex between dollar signs, for instance $\theta$.
 
 
-# Results
 
 
 
