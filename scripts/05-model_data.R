@@ -1,5 +1,5 @@
 #### Preamble ####
-# Purpose: Models... [...UPDATE THIS...]
+# Purpose: Models
 # Author: Rohan Alexander, Hannah Yu
 # Date: 14 January 2025
 # Contact: rohan.alexander@utoronto.ca, realhannah.yu@mail.utoronto.ca
@@ -11,56 +11,147 @@
 
 
 #### Workspace setup ####
-library(tidyverse)
+library(dplyr)
 library(rstanarm)
 
 #### Read data ####s
-analysis_data <- read_csv("data/analysis_data/analysis_data.csv")
+analysis_data <- read_parquet("data/02-analysis_data/cleaned_data.parquet")
 
-### Model data ####
-first_model <-
-  stan_glm(
-    formula = flying_time ~ length + width,
-    data = analysis_data,
-    family = gaussian(),
-    prior = normal(location = 0, scale = 2.5, autoscale = TRUE),
-    prior_intercept = normal(location = 0, scale = 2.5, autoscale = TRUE),
-    prior_aux = exponential(rate = 1, autoscale = TRUE),
-    seed = 853
-  )
+set.seed(853)
 
-
-
-# Assuming 'hansard_corpus' is already loaded
-# Convert variables to factors
-hansard_corpus <- hansard_corpus %>%
+sample_data <- analysis_data %>%
+  select(interject, gender, party, word_count) %>% # Select only the desired variables
   mutate(
-    interject = as.factor(interject),  # Ensure 'interject' is a factor for logistic regression
-    gender = as.factor(gender),
-    party = as.factor(party),
-    in.gov = as.factor(in.gov),
-    year = as.numeric(format(as.Date(date, format = "%Y-%m-%d"), "%Y"))  # Extract year from date
+    interject = as.numeric(interject),  # Ensure 'interject' is numeric (binary: 0 or 1)
+    gender = as.factor(gender),         # Convert 'gender' to a factor
+    party = as.factor(party),           # Convert 'party' to a factor
+    word_count = as.numeric(word_count) # Ensure 'word_count' is numeric
   )
 
-# Check for any NA values and decide how to handle them
-hansard_corpus1 <- na.omit(hansard_corpus)  # This line removes rows with any NA values
+# Check the number of rows and columns in the original dataset
+original_rows <- nrow(sample_data)
+original_cols <- ncol(sample_data)
 
 
-# Load the stats package for logistic regression
-library(stats)
+# Count the number of missing values in the original dataset
+na_counts <- sample_data %>%
+  summarise_all(~ sum(is.na(.))) %>%
+  pivot_longer(everything(), names_to = "Column", values_to = "Missing_Values")
 
-# Fit logistic regression model
-logit_model <- glm(interject ~ gender + year + party + in.gov, data = hansard_corpus1, family = binomial())
+# Total missing values in the dataset
+total_na <- sum(na_counts$Missing_Values)
+print(total_na)
 
-# Display the summary of the model
-summary(logit_model)
+# Print the original dataset statistics
+cat("Original Dataset:\n")
+cat("Rows:", original_rows, "\n")
+cat("Columns:", original_cols, "\n")
+cat("Total Missing Values:", total_na, "\n")
+print(na_counts)
 
-```
+
+# Create interaction variable
+sample_data <- sample_data %>%
+  mutate(word_count_gender = word_count * as.numeric(gender == "Female")) %>%
+  drop_na()
+
+# Check the state of the cleaned dataset
+cleaned_rows <- nrow(sample_data)
+cleaned_cols <- ncol(sample_data)
+
+# Calculate the number of rows removed due to NA values
+rows_removed <- original_rows - cleaned_rows
+
+# Print the cleaned dataset statistics
+cat("\nCleaned Dataset:\n")
+cat("Rows:", cleaned_rows, "\n")
+cat("Columns:", cleaned_cols, "\n")
+cat("Rows Removed Due to Missing Values:", rows_removed, "\n")
+
+
+# Randomly sample 1000 observations from your dataset
+sample_data <- sample_data %>% sample_n(1000)
+
+# Fit the logistic regression model using stan_glm
+stan_model <- stan_glm(
+  interject ~ gender + party + word_count + word_count_gender,  # Formula for the model
+  data = sample_data,
+  family = binomial(link = "logit"),        # Logistic regression
+  prior = normal(0, 2.5),                  # Default prior for coefficients
+  prior_intercept = normal(0, 5),          # Default prior for intercept
+  chains = 4,                              # Number of Markov chains
+  iter = 2000,                             # Number of iterations per chain
+  seed = 853                              # Set seed for reproducibility
+)
+
 
 #### Save model ####
 saveRDS(
-  first_model,
-  file = "models/first_model.rds"
+  stan_model,
+  file = "models/model1.rds"
 )
+
+
+
+
+
+#### Read data ####s
+analysis_data1 <- read_parquet("data/02-analysis_data/cleaned_data.parquet")
+
+set.seed(853)
+
+sample_data1 <- analysis_data1 %>%
+  select(interject, gender, word_count) %>% # Select only the desired variables
+  mutate(
+    interject = as.numeric(interject),  # Ensure 'interject' is numeric (binary: 0 or 1)
+    gender = as.factor(gender),         # Convert 'gender' to a factor
+    word_count = as.numeric(word_count) # Ensure 'word_count' is numeric
+  )
+
+
+# Count the number of missing values in the original dataset
+na_counts <- sample_data1 %>%
+  summarise_all(~ sum(is.na(.))) %>%
+  pivot_longer(everything(), names_to = "Column", values_to = "Missing_Values")
+
+
+# Print the original dataset statistics
+cat("Original Dataset:\n")
+cat("Rows:", original_rows, "\n")
+cat("Columns:", original_cols, "\n")
+cat("Total Missing Values:", total_na, "\n")
+print(na_counts)
+
+
+# Create interaction variable
+sample_data1 <- sample_data1 %>%
+  mutate(word_count_gender = word_count * as.numeric(gender == "Female")) %>%
+  drop_na()
+
+
+# Randomly sample 1000 observations from your dataset
+sample_data1 <- sample_data1 %>% sample_n(1000)
+
+# Fit the logistic regression model using stan_glm
+stan_model1 <- stan_glm(
+  interject ~ gender + word_count + word_count_gender,  # Formula for the model
+  data = sample_data,
+  family = binomial(link = "logit"),        # Logistic regression
+  prior = normal(0, 2.5),                  # Default prior for coefficients
+  prior_intercept = normal(0, 5),          # Default prior for intercept
+  chains = 4,                              # Number of Markov chains
+  iter = 2000,                             # Number of iterations per chain
+  seed = 853                              # Set seed for reproducibility
+)
+
+
+#### Save model ####
+saveRDS(
+  stan_model1,
+  file = "models/model2.rds"
+)
+
+
+
 
 

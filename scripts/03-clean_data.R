@@ -13,13 +13,6 @@ library(tidyr)
 library(lubridate)
 #### Clean data ####
 raw_data <- read_parquet("data/01-raw_data/hansard_corpus.parquet")
-head(raw_data, 150)
-
-
-# Explore the Data
-summary(raw_data)
-str(raw_data)
-
 
 raw_data <- raw_data %>%
   mutate(
@@ -33,7 +26,6 @@ raw_data <- raw_data %>%
     )
   )
 
-
 raw_data <- raw_data %>%
   mutate(
     # Convert 'interject' to numeric without changing NA values
@@ -41,7 +33,6 @@ raw_data <- raw_data %>%
     # Correct date format and handle potential date issues
     date = as.Date(date, format="%Y-%m-%d")
   )
-
 
 # Correct Data Types
 raw_data <- raw_data %>%
@@ -52,6 +43,10 @@ raw_data <- raw_data %>%
 
 hansard_corpus$question <- as.numeric(as.character(hansard_corpus$question))
 
+# Filter for only Chamber data and create word count
+raw_data <- raw_data %>%
+  filter(fedchamb_flag == 0) %>%
+  mutate(word_count = str_count(body, "\\b\\w+\\b"))
 
 # Error Checks
 table(raw_data$gender)  # Should only contain known categories
