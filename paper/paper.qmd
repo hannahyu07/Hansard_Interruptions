@@ -43,7 +43,9 @@ library(kableExtra)
 library(dplyr)
 library(stringr)
 
-
+library(stm)
+library(quanteda)
+library(tm)
 ```
 
 ```{r}
@@ -1064,12 +1066,126 @@ modelsummary(
 
 The logistic regression model @tbl-modelresults2 continues to highlight key predictors of interruptions during speeches, with the removal of party. Male speakers remain more likely to experience interruptions than female speakers, but the effect size has slightly decreased, reflecting a smaller increase in the likelihood of interruptions. The relationship between speech length and interruptions remains consistent, with longer speeches slightly reducing the likelihood of interruptions. The interaction between word count and gender also remains unchanged, suggesting that longer speeches by male speakers are still slightly more likely to invite interruptions compared to those by females.
 
+```{r}
+#| include: false
+#| eval: true
+#| warning: false
+#| message: false
+hansard_topics <- readRDS(file = here::here("models/hansard_topics.rda"))
+```
 
 
 
+```{r}
+#| echo: false
+#| eval: true
+#| warning: false
+labelTopics(hansard_topics)
+```
+
+To analyze discussions in the Australian Parliament, I applied Structural Topic Modeling (STM) to identify key themes in speeches from 2020. The process began with data preprocessing, where I filtered the dataset to include only relevant entries, removed missing values, and structured the text data for analysis. A document-feature matrix (DFM) was then created, representing word frequencies while eliminating punctuation, stopwords, and low-frequency terms to improve model efficiency.
+
+The STM model was trained with 10 topics and incorporated party affiliation and speaker gender as prevalence covariates, allowing for an examination of how these factors influence topic distribution. The model was optimized over 50 iterations, ensuring convergence and stability. The final output provided a breakdown of the dominant topics, with key terms extracted using highest probability words, FREX words (distinctive to each topic), Lift words (rare but highly relevant), and Score words (best summarizing a topic’s meaning).
+
+```{r, fig.width=10, fig.height=6}
+#| echo: false
+#| eval: true
+#| label: tbl-stm_prop
+#| tbl-cap: "STM Topic Proportion Plot "
+#| warning: false
+plot(hansard_topics, type = "summary", n = 5)
+```
+
+@tbl-stm_prop provides an overview of the most prevalent themes in the 2020 Australian parliamentary speeches. The x-axis represents the expected topic proportions, indicating how frequently each topic appears across the dataset. The y-axis lists the top topics, summarized by their most representative words.
+
+From this visualization, Topic 5 ("minister, government, time, just") emerges as the most dominant theme, suggesting that government policies, ministerial discussions, and legislative matters were central to parliamentary discourse. Topic 8 ("people, government, need, now") follows closely, highlighting debates around public needs, government interventions, and social policies. Other significant topics include healthcare (Topic 10), economic measures (Topic 4), legal and family-related issues (Topic 7), and national security (Topic 1).
+
+The distribution of topics provides insights into policy priorities and legislative focus areas during 2020. By incorporating metadata such as speaker affiliation and gender, further analysis can uncover how different political groups or demographics engaged with these key issues.
+
+
+```{r}
+#| include: false 
+#par(mar = c(3, 10, 0.2, 1))  # Increase left margin
+#plot(stm_gender, "gender", model = hansard_topics, topics = c(1, 2, 3),
+     #cex = 0.02)  # Reduce text size
+```
 
 
 
+```{r}
+#| include: false 
+bertopic_model <- readRDS("models/bertopic_model.rds")
+str(bertopic_model)  # Check structure
+```
+
+
+```{r}
+str(bertopic_model)
+
+```
+
+```{r}
+#| include: false 
+methods(class = class(bertopic_model))
+names(bertopic_model)
+
+# Convert lists to readable text
+topic_info$Representation <- sapply(topic_info$Representation, function(x) paste(x, collapse=", "))
+topic_info$Representative_Docs <- sapply(topic_info$Representative_Docs, function(x) paste(x, collapse=" | "))
+
+# View the cleaned dataframe
+print(topic_info)
+
+```
+We then applied BERTopic, a powerful topic modeling technique that leverages transformer-based embeddings and clustering methods to extract coherent topics from large text corpora. The modeling process involved preprocessing the parliamentary transcripts, fitting the BERTopic model, and visualizing the results to derive insights into the dominant themes discussed.
+
+The initial dataset consisted of Australian parliamentary speeches, which were first filtered to include only those from the year 2020. After preprocessing steps such as text cleaning and tokenization, BERTopic was applied to identify underlying topics. The model was trained on the speech text, generating a set of distinct topics characterized by their most representative words. The results were stored and analyzed to understand the frequency and nature of discussions in parliament.
+
+
+```{r}
+#| echo: false
+#| eval: true
+#| label: tbl-bert1
+#| tbl-cap: "Most Common Topics in\nParliamentary Speeches (2020)"
+#| warning: false
+
+ggplot(top_topics, aes(x = reorder(Name, Count), y = Count)) +
+  geom_bar(stat = "identity", fill = "steelblue", color = "black") +
+  coord_flip() +
+  labs(
+    title = "Most Common Topics in\nParliamentary Speeches (2020)",
+    x = "Topic",
+    y = "Number of Speeches"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.title = element_text(size = 14, face = "bold", margin = margin(b = 10)), # Add bottom margin
+    plot.margin = margin(t = 20, r = 20, b = 20, l = 20) # Increase space
+  )
+
+```
+@tbl-bert1 presents the most common topics in parliamentary speeches, ranked by the number of speeches associated with each topic. Notably, aged care and homecare, infrastructure and roads, and emergency response to fires emerged as the most frequently discussed themes, reflecting key policy concerns in 2020. Other prominent topics included childcare and education, motions and legislative processes, and government economic policies. These findings suggest that parliamentary focus was heavily directed toward public services and economic development, particularly in the wake of major national events such as bushfires and the ongoing pandemic response.
+
+
+```{r}
+#| echo: false
+#| eval: true
+#| label: tbl-bert2
+#| tbl-cap: "Word Cloud"
+#| warning: false
+library(wordcloud)
+
+# Get the most frequent words
+word_freqs <- table(unlist(strsplit(paste(topic_info$Representation, collapse = " "), ", ")))
+
+# Generate word cloud
+wordcloud(names(word_freqs), freq = word_freqs, max.words = 100, colors = brewer.pal(8, "Dark2"))
+
+```
+
+A complementary word cloud further highlights the most frequently occurring words within the parliamentary discussions. Terms such as question, minister, interjecting, house, and Morrison suggest a heavy emphasis on political debates, procedural discussions, and executive actions. The prominence of words related to economic policies and public welfare indicates that these areas dominated parliamentary discourse in 2020.
+
+By applying BERTopic modeling, I was able to extract and visualize key themes from Australian parliamentary speeches. The results indicate a strong focus on public services, infrastructure, legislative procedures, and economic policies, aligning with major political and social developments of that year. The combination of ranked topic distributions and textual analysis through the word cloud provides a comprehensive view of how parliamentary discourse was shaped in 2020. These findings can be further explored to analyze trends over time or compare discourse across different political actors.
 
 
 
