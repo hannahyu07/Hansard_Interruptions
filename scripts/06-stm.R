@@ -86,6 +86,7 @@ saveRDS(stm_model, file = "models/hansard_topics.rda")
 
 
 
+# BERTopic 
 
 bertopic <- import("bertopic")
 # Ensure 'body' column is character format
@@ -108,12 +109,14 @@ saveRDS(topic_model, file = "models/bertopic_model.rds")
 
 
 
+# Create hansard subset dataset 
+
 hansard_subset <- hansard_corpus %>%
   filter(year == 2020) %>%
   filter(!is.na(party)) %>%
   filter(!is.na(gender)) %>%
   filter(body != "")  # Remove empty speeches
 
-
+# Save hansard subset
 saveRDS(hansard_subset, file = here::here("models/hansard_subset.rds"))
 
