@@ -84,6 +84,19 @@ saveRDS(stm_model, file = "models/hansard_topics.rda")
 
 
 
+# Create hansard subset dataset 
+
+hansard_subset <- hansard_corpus %>%
+  filter(year == 2020) %>%
+  filter(!is.na(party)) %>%
+  filter(!is.na(gender)) %>%
+  filter(body != "")  # Remove empty speeches
+
+# Save hansard subset
+saveRDS(hansard_subset, file = here::here("C:/Users/35911/Downloads/Hansard_Interruptions/models/hansard_subset.rds"))
+
+
+
 
 
 # BERTopic 
@@ -104,19 +117,66 @@ topics <- results[[1]]  # First value: Topic assignments
 probs <- results[[2]]   # Second value: Topic probabilities
 
 
+
 # Save the full BERTopic model
 saveRDS(topic_model, file = "models/bertopic_model.rds")
 
 
 
-# Create hansard subset dataset 
 
-hansard_subset <- hansard_corpus %>%
-  filter(year == 2020) %>%
-  filter(!is.na(party)) %>%
-  filter(!is.na(gender)) %>%
-  filter(body != "")  # Remove empty speeches
 
-# Save hansard subset
-saveRDS(hansard_subset, file = here::here("models/hansard_subset.rds"))
+#### Read full dataset ####
+hansard_corpus <- read_parquet("data/02-analysis_data/cleaned_data.parquet")
+
+# Define years to loop through
+years <- unique(hansard_corpus$year)  # Get all available years
+
+# Loop over each year
+for (yr in years) {
+  
+  cat("Processing Year:", yr, "\n")  # Print progress
+  
+  # Filter speeches for the specific year
+  hansard_subset <- hansard_corpus %>%
+    filter(year == yr) %>%   
+    filter(!is.na(party)) %>%  
+    select(name, body, gender, party)  
+  
+  # Ensure text is character format
+  hansard_subset$body <- as.character(hansard_subset$body)
+  
+  # Remove empty speeches
+  hansard_subset <- hansard_subset[nchar(hansard_subset$body) > 0, ]
+  
+  # Create a corpus
+  hansard_corpus_year <- corpus(hansard_subset, text_field = "body")
+  
+  # Tokenization
+  hansard_tokens <- tokens(hansard_corpus_year, remove_punct = TRUE, remove_numbers = TRUE) %>%
+    tokens_remove(stopwords("en"))
+  
+  # Create document-feature matrix (DFM)
+  dfm_hansard <- dfm(hansard_tokens)
+  
+  # Filter out empty documents
+  valid_docs <- rowSums(dfm_hansard) > 0
+  dfm_hansard <- dfm_hansard[valid_docs, ]
+  hansard_subset <- hansard_subset[valid_docs, ]
+  
+  # Convert to STM format
+  hansard_stm <- convert(dfm_hansard, to = "stm")
+  
+  # Run STM Model for the current year
+  stm_model <- stm(documents = hansard_stm$documents, 
+                   vocab = hansard_stm$vocab, 
+                   K = 10,  
+                   prevalence = ~ gender + party,  
+                   data = hansard_subset,  
+                   max.em.its = 50)
+  
+  # Save each model separately
+  saveRDS(stm_model, file = paste0("models/hansard_topics_", yr, ".rda"))
+}
+
+cat("All models processed and saved.\n")
 

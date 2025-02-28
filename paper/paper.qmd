@@ -52,15 +52,15 @@ library(tm)
 #| include: false
 #| warning: false
 #| message: false
-hansard_corpus <- read_parquet(here::here("data/02-analysis_data/cleaned_data.parquet"))
+hansard_corpus <- read_parquet(here::here("C:/Users/35911/Downloads/Hansard_Interruptions/data/02-analysis_data/cleaned_data.parquet"))
+
 ```
 
 ```{r}
-#| include: false
 #| warning: false
 #| message: false
 # View the first few rows
-head(hansard_corpus, 150)
+#head(hansard_corpus, 150)
 
 ```
 
@@ -727,7 +727,7 @@ ggplot(interruption_counts, aes(x = in_gov, y = Count, fill = interject)) +
 ```
 
 
-@tbl-ingov1, @tbl-ingov2, and @fig-gov offer a detailed look at interruptions during parliamentary sessions, categorized by members' government status and gender. Notably, interruptions are extremely rare for members with clearly identified status. This indicates a potential correlation between established government status and more orderly interactions, highlighting the importance of role clarity in maintaining decorum.
+@tbl-ingov1 and @fig-gov offer a detailed look at interruptions during parliamentary sessions, categorized by members' government status and gender. Notably, interruptions are extremely rare for members with clearly identified status. This indicates a potential correlation between established government status and more orderly interactions, highlighting the importance of role clarity in maintaining decorum.
 
 However, the significant amount of missing data makes reliable inferences about the true nature of interruptions and their correlation with member status challenging. The vast majority of interruptions occur when the government status of the speaker is unknown. This trend is consistent across both the comprehensive dataset and the subset limited to non-federal chamber sessions. Interruptions are exceedingly rare for members whose government status is known, with only 22 interruptions for those "In Government" and an even fewer 4 for those "In Opposition" across all data. Due to this substantial amount of missing information, it is very difficult to firmly conclude whether our observed patterns hold true.
 
@@ -811,7 +811,7 @@ interruptions_question_analysis <- hansard_corpus %>%
   )
 
 # Print the resulting dataset to verify
-print(interruptions_question_analysis)
+#print(interruptions_question_analysis)
 
 ```
 
@@ -832,7 +832,7 @@ interruptions_question_analysis <- hansard_corpus %>%
   )
 
 # Print the resulting dataset to verify
-print(interruptions_question_analysis)
+#print(interruptions_question_analysis)
 ```
 
 
@@ -846,7 +846,7 @@ hansard_corpus1 <- hansard_corpus %>%
   mutate(word_count = str_count(body, "\\b\\w+\\b"))
 
 # Print the data to see the word counts
-head(hansard_corpus1)
+#head(hansard_corpus1)
 ```
 
 ```{r}
@@ -905,7 +905,7 @@ ggplot(filtered_data, aes(x = word_count, fill = gender, color = gender)) +
     values = c("Female" = "red", "Male" = "blue")
   ) +
   labs(
-    title = "Density Distribution of Word Count by Gender (Word Count ≤ 500)",
+    title = "Density Distribution of Word Count by Gender (Word Count < 500)",
     x = "Word Count",
     y = "Density",
     fill = "Gender",
@@ -990,7 +990,7 @@ y_i|\pi_i &\sim \mbox{Bern}(\pi_i) \\
 #| message: false
 
 model1 <-
-  readRDS(file = here::here("models/model1.rds"))
+  readRDS(file = here::here("C:/Users/35911/Downloads/Hansard_Interruptions/models/model1.rds"))
 
 ```
 
@@ -1045,7 +1045,7 @@ modelsummary(
 #| warning: false
 #| message: false
 model2 <-
-  readRDS(file = here::here("models/model2.rds"))
+  readRDS(file = here::here("C:/Users/35911/Downloads/Hansard_Interruptions/models/model2.rds"))
 
 ```
 
@@ -1071,14 +1071,13 @@ The logistic regression model @tbl-modelresults2 continues to highlight key pred
 #| eval: true
 #| warning: false
 #| message: false
-hansard_topics <- readRDS(file = here::here("models/hansard_topics.rda"))
+hansard_topics <- readRDS(file = here::here("C:/Users/35911/Downloads/Hansard_Interruptions/models/hansard_topics.rda"))
 ```
 
 
 
 ```{r}
-#| echo: false
-#| eval: true
+#| include: false
 #| warning: false
 labelTopics(hansard_topics)
 ```
@@ -1103,89 +1102,184 @@ From this visualization, Topic 5 ("minister, government, time, just") emerges as
 The distribution of topics provides insights into policy priorities and legislative focus areas during 2020. By incorporating metadata such as speaker affiliation and gender, further analysis can uncover how different political groups or demographics engaged with these key issues.
 
 
-```{r}
-#| include: false 
-#par(mar = c(3, 10, 0.2, 1))  # Increase left margin
-#plot(stm_gender, "gender", model = hansard_topics, topics = c(1, 2, 3),
-     #cex = 0.02)  # Reduce text size
-```
-
-
 
 ```{r}
-#| include: false 
-bertopic_model <- readRDS("models/bertopic_model.rds")
-str(bertopic_model)  # Check structure
+#| include: false
+library(stm)
+library(dplyr)
+library(readr)
+
+# Define years and create empty list for storage
+years <- 1998:2022
+topic_props_list <- list()
+
+# Loop through each year and extract topic proportions & keywords
+for (year in years) {
+  model_path <- paste0("C:/Users/35911/Downloads/Hansard_Interruptions/models/hansard_topics_", year, ".rda")
+  
+  if (file.exists(model_path)) {
+    stm_model <- readRDS(model_path)
+    
+    # Extract topic proportions
+    topic_props <- data.frame(
+      Year = year,
+      Topic = paste0("Topic_", 1:ncol(stm_model$theta)),  # STM topics
+      Proportion = colMeans(stm_model$theta)  # Average topic proportion
+    )
+    
+    # Extract top words for each topic
+    topic_labels <- labelTopics(stm_model, n = 10)$prob  # Adjust 'n' for more words
+    topic_keywords <- apply(topic_labels, 1, paste, collapse = ", ")  # Convert to string
+
+    # Add keywords to dataframe
+    topic_props$Keywords <- topic_keywords
+
+    # Store results
+    topic_props_list[[as.character(year)]] <- topic_props
+  } else {
+    print(paste("Skipping", year, "- No Model Found"))
+  }
+}
+
+# Combine results into one dataframe
+topic_summary <- bind_rows(topic_props_list)
+
+# Save extracted topics & keywords
+write_csv(topic_summary, "topic_summary_1998_2022.csv")
+
+# View first few rows
+#print(topic_summary)
+
 ```
-
-
 ```{r}
-str(bertopic_model)
+#| include: false
+library(dplyr)
+library(tidyr)
+library(readr)
+
+# Select the most prominent topic per year
+top_topics_per_year <- topic_summary %>%
+  group_by(Year) %>%
+  summarise(Top_Topic = first(Topic), Keywords = first(Keywords))  # First topic listed is the most prominent
+
+# Display table
+#print(top_topics_per_year)
 
 ```
-
-```{r}
-#| include: false 
-methods(class = class(bertopic_model))
-names(bertopic_model)
-
-# Convert lists to readable text
-topic_info$Representation <- sapply(topic_info$Representation, function(x) paste(x, collapse=", "))
-topic_info$Representative_Docs <- sapply(topic_info$Representative_Docs, function(x) paste(x, collapse=" | "))
-
-# View the cleaned dataframe
-print(topic_info)
-
-```
-We then applied BERTopic, a powerful topic modeling technique that leverages transformer-based embeddings and clustering methods to extract coherent topics from large text corpora. The modeling process involved preprocessing the parliamentary transcripts, fitting the BERTopic model, and visualizing the results to derive insights into the dominant themes discussed.
-
-The initial dataset consisted of Australian parliamentary speeches, which were first filtered to include only those from the year 2020. After preprocessing steps such as text cleaning and tokenization, BERTopic was applied to identify underlying topics. The model was trained on the speech text, generating a set of distinct topics characterized by their most representative words. The results were stored and analyzed to understand the frequency and nature of discussions in parliament.
-
 
 ```{r}
 #| echo: false
 #| eval: true
-#| label: tbl-bert1
-#| tbl-cap: "Most Common Topics in\nParliamentary Speeches (2020)"
+#| label: tbl-prom_topic
+#| tbl-cap: "Most Prominent Topics Per Year"
 #| warning: false
 
-ggplot(top_topics, aes(x = reorder(Name, Count), y = Count)) +
-  geom_bar(stat = "identity", fill = "steelblue", color = "black") +
-  coord_flip() +
-  labs(
-    title = "Most Common Topics in\nParliamentary Speeches (2020)",
-    x = "Topic",
-    y = "Number of Speeches"
-  ) +
-  theme_minimal(base_size = 14) +
-  theme(
-    plot.title = element_text(size = 14, face = "bold", margin = margin(b = 10)), # Add bottom margin
-    plot.margin = margin(t = 20, r = 20, b = 20, l = 20) # Increase space
+library(gt)
+
+# Create a nicely formatted table without the "Top Topic" column
+top_topics_per_year %>%
+  select(-Top_Topic) %>%  # Remove "Top Topic" column
+  gt() %>%
+  tab_header(
+    title = "Most Prominent Topics Per Year",
+    subtitle = "Extracted from Parliamentary Speeches (1998-2022)"
+  ) %>%
+  cols_label(
+    Year = "Year",
+    Keywords = "Representative Keywords"
+  ) %>%
+  fmt_markdown(columns = Keywords) %>%
+  tab_options(
+    table.font.size = "small",
+    heading.title.font.size = "large",
+    heading.subtitle.font.size = "medium"
   )
 
-```
-@tbl-bert1 presents the most common topics in parliamentary speeches, ranked by the number of speeches associated with each topic. Notably, aged care and homecare, infrastructure and roads, and emergency response to fires emerged as the most frequently discussed themes, reflecting key policy concerns in 2020. Other prominent topics included childcare and education, motions and legislative processes, and government economic policies. These findings suggest that parliamentary focus was heavily directed toward public services and economic development, particularly in the wake of major national events such as bushfires and the ongoing pandemic response.
 
+```
+
+
+To analyze the evolution of parliamentary discourse over time, I ran the Structural Topic Model (STM) on each year from 1998 to 2022, extracting the most prominent topics discussed in Australian parliamentary speeches annually. This approach allows us to track changes in political priorities and public policy discussions across different governments and time periods.
+
+@tbl-prom_topic that extracted topics from Australian parliamentary speeches from 1998 to 2022 reveal recurring themes in economic policy, governance, and public welfare. In 1998, keywords such as "funding, economy, billion, jobs, growth" indicate a strong focus on financial matters, possibly reflecting the economic policies of the Howard government. By 1999, discussions shifted toward legislative processes, with terms like "committee, country, parliament, act, bill, interest", suggesting an emphasis on governance and parliamentary procedures.
+
+In the early 2000s, taxation and economic regulation became central themes. The year 2000 prominently features "tax, GST, regional, cost", likely indicating debates around the introduction of the Goods and Services Tax (GST), a major economic reform at the time. By 2001, discussions expanded to include "question, education, state, leader, speaker", showing parliamentary focus on education policy and leadership discussions. The presence of "security, report, speaker" in later years, such as 2007, suggests increasing discussions about national security and legislative oversight.
+
+The financial crisis of 2008 appears to have influenced parliamentary discussions, as evidenced by the prominence of "government, economic, parliament, working" in that year. This aligns with government efforts to stabilize the economy and implement stimulus measures. By 2010, speeches featured "policy, education, billion, services", indicating continued investment in education and public services. In 2015, "education, students, infrastructure, training, funding" suggests an ongoing emphasis on higher education and workforce development.
+
+More recently, parliamentary discussions reflected the impact of the COVID-19 pandemic. In 2020, "government, security, legislation, parliament" emerged as dominant themes, which likely relate to emergency public health measures and pandemic response policies. By 2021 and 2022, terms such as "community, health, local, member" indicate a growing focus on public health, social support, and government intervention in economic recovery.
+
+Overall, this analysis provides a clear trajectory of parliamentary priorities over time. While early discussions centered on economic policy and legislative procedures, later years saw a growing emphasis on education, national security, and, more recently, public health. The keywords extracted from parliamentary speeches highlight shifting political and policy concerns, aligning with major national and global events during this period.
+```{r}
+#| include: false
+# Load necessary libraries
+library(dplyr)
+library(ggplot2)
+library(readr)
+
+
+topic_spikes <- topic_summary %>%
+  arrange(Topic, Year) %>%
+  group_by(Topic) %>%
+  mutate(Change = Proportion - lag(Proportion)) %>%
+  filter(!is.na(Change))  # Remove first year (no previous comparison)
+
+# Ensure unique topic-year-keyword mapping
+topic_spikes <- topic_spikes %>%
+  left_join(topic_summary %>% select(Year, Topic, Keywords), by = c("Year", "Topic")) %>%
+  distinct() %>%
+  select(-Keywords.x) %>%
+  rename(Keywords = Keywords.y)
+
+# Verify that Keywords exist
+print(head(topic_spikes))
+
+
+```
 
 ```{r}
 #| echo: false
 #| eval: true
-#| label: tbl-bert2
-#| tbl-cap: "Word Cloud"
+#| label: fig-keytopics
+#| fig-cap: "Mentions of Key Topics Over Time"
 #| warning: false
-library(wordcloud)
+library(stringr)
+library(RColorBrewer)  # Better color schemes
 
-# Get the most frequent words
-word_freqs <- table(unlist(strsplit(paste(topic_info$Representation, collapse = " "), ", ")))
 
-# Generate word cloud
-wordcloud(names(word_freqs), freq = word_freqs, max.words = 100, colors = brewer.pal(8, "Dark2"))
+# Define keywords of interest
+keywords_of_interest <- c("education", "health", "economy", "policy", "tax", "energy")
+
+# Extract individual keyword counts separately
+tracked_topics <- topic_summary %>%
+  mutate(Cleaned_Keywords = str_extract_all(Keywords, paste(keywords_of_interest, collapse = "|"))) %>%
+  unnest(Cleaned_Keywords) %>%  # This separates each keyword into its own row
+  filter(Cleaned_Keywords != "") %>%
+  group_by(Year, Cleaned_Keywords) %>%
+  summarise(Count = sum(Proportion * 1000), .groups = "drop")  # Count each separately
+
+
+# Define color palette (use distinct colors)
+color_palette <- brewer.pal(n = length(unique(tracked_topics$Cleaned_Keywords)), name = "Dark2")
+
+# Plot evolution over time with improved colors
+ggplot(tracked_topics, aes(x = Year, y = Count, color = Cleaned_Keywords, group = Cleaned_Keywords)) +
+  geom_line(size = 1.2) +
+  geom_point(size = 2) +
+  scale_color_manual(values = color_palette) +  # Apply better colors
+  labs(title = "Mentions of Key Topics Over Time",
+       x = "Year",
+       y = "Count of Mentions",
+       color = "Topic Keywords") +
+  theme_minimal() +
+  theme(legend.position = "right", legend.text = element_text(size = 12))  # Improve legend readability
+
 
 ```
+@fig-keytopics tracks the mentions of key policy topics—economy, education, energy, health, policy, and tax—in Australian parliamentary speeches from 1998 to 2022. Each topic fluctuates over time, reflecting shifts in legislative focus due to major events.
 
-A complementary word cloud further highlights the most frequently occurring words within the parliamentary discussions. Terms such as question, minister, interjecting, house, and Morrison suggest a heavy emphasis on political debates, procedural discussions, and executive actions. The prominence of words related to economic policies and public welfare indicates that these areas dominated parliamentary discourse in 2020.
+Economic discussions remain stable but rise post-2008, aligning with the global financial crisis. Tax mentions spike around 2000, likely due to the introduction of the GST, and reappear during key economic reforms. Health surges in 2020, reflecting COVID-19 discussions, while education remains consistently relevant, peaking during policy changes in higher education and funding. Energy mentions rise after 2010, coinciding with climate policy debates like the carbon tax (2012-2014). The steady increase in policy discussions suggests a growing focus on governance and regulatory matters. These trends highlight how parliamentary attention shifts in response to national and global developments such as economic crises, education reforms, climate policies, and the pandemic.
 
-By applying BERTopic modeling, I was able to extract and visualize key themes from Australian parliamentary speeches. The results indicate a strong focus on public services, infrastructure, legislative procedures, and economic policies, aligning with major political and social developments of that year. The combination of ranked topic distributions and textual analysis through the word cloud provides a comprehensive view of how parliamentary discourse was shaped in 2020. These findings can be further explored to analyze trends over time or compare discourse across different political actors.
 
 
 
