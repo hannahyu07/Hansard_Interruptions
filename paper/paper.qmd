@@ -14,15 +14,33 @@ bibliography: references.bib
 
 # Introduction {#sec-introduction}
 
-Although interjections are officially prohibited during a member's speech in the Australian Parliament, interruptions still occur frequently, particularly during heated debates often fueled by political disagreements [@aphInterruptions2025]. This raises crucial questions about gender dynamics within the context of parliamentary debates in Australia. Concerns are growing regarding whether women are disproportionately interrupted compared to men, highlighting potential underlying biases that could influence the effectiveness and fairness of parliamentary proceedings.
+Interruptions are a defining feature of political discourse, often shaping the dynamics of power and influence within legislative bodies. While parliamentary rules in Australia officially prohibit interjections, disruptions remain a common occurrence, particularly in contentious debates where political tensions run high [@aphInterruptions2025]. Beyond their immediate impact on debate flow, interruptions may reflect deeper systemic biases, particularly in relation to gender. If women in Parliament are interrupted more frequently than their male colleagues, this pattern could signal broader inequalities in political representation and influence, warranting closer examination.
 
 There has been considerable research on speech patterns and gender-based interruptions in government speeches across various countries. For instance, during U.S. Supreme Court confirmation hearings, female and minority nominees are interrupted more frequently than their male and white counterparts [@genderRaceSCCHearings2024]. Additionally, in the US Congress, women also experienced more interruptions than men, especially during discussions of women’s issues, where women are more than twice as likely to be interrupted compared to non-gendered topics [@genderInterruptionsCongress2022]. In the Ecuadorian Congress, female legislators not only deliver fewer speeches but also speak for shorter durations compared to their male peers. Furthermore, women often wait longer to regain the floor after interruptions, leading them to strategically shorten their speeches to minimize further disruptions. However, women in authoritative positions can mitigate some of these interruption-related penalties, with senior women's speeches often exceeding those of men in length when they achieve comparable levels of experience or hold significant roles [@vera2021politics].
 
 Contrastingly, studies of the Australian High Court reveal a different dynamic [@jacobiPredictabilityInterruptions]. The result suggested that contrary to the U.S. Supreme Court, there is no significant difference between female and male justices regarding interruptions. Although women experience a higher rate of interruptions relative to their speaking time, the subtlety of this effect suggests that gender dynamics within the Australian court might be more balanced compared to the U.S. Supreme Court. This highlights the differences in how judicial interactions are influenced by gender across different legal systems.
 
-Building on existing literature suggesting that the Australian High Court may exhibit better gender dynamics than its counterparts in the US, we aim to delve deeper into the issue of gender-based interruptions within the Australian Parliament. Utilizing the Australian Hansard, the official written record of parliamentary debates which has been digitized by Lindsay Katz and Rohan Alexander, we have access to comprehensive records of all parliamentary proceedings from 1998 to 2022 [@katz2023digitization]. From the dataset, we aim to analyze the frequency and context of interruptions based on gender. Specifically, our study will focus on comparing the rates at which male and female parliamentarians are interrupted during their speeches.
+Building on these findings, our study investigates gender-based interruptions in the Australian Parliament using the Australian Hansard, the official written record of parliamentary proceedings digitized by Lindsay Katz and Rohan Alexander [@katz2023digitization]. We first analyze the frequency and patterns of interruptions directed at male and female parliamentarians to assess whether gender influences how often speakers are interrupted. Beyond interruptions, we extend our analysis by examining the topics discussed in Parliament each year using Structural Topic Modeling (STM). This allows us to explore whether certain policy areas are associated with higher interruption rates and whether women engage in different policy discussions than men. By connecting these two aspects, we aim to identify whether interruptions are more prevalent in specific years and whether they coincide with particular topics, shedding light on how gender and discourse shape parliamentary debate.
 
 The remainder of this paper is structured as follows: @sec-data demonstrates the data used for this paper, @sec-model describes, justifies, and explains my model, @sec-results highlights the results of the predictions using tables and graphs, and @sec-discussion contains important implications and conclusions based on the findings.
+
+```{r}
+library(tinytex)
+
+#install.packages("tinytex")
+#tinytex::install_tinytex()
+
+
+
+#tinytex::tlmgr_update()
+#tinytex::tlmgr_install("latex-bin")
+#tinytex::tlmgr_install("xetex")
+
+#.libPaths()  # Check all library paths
+#find.package("rlang")  # Identify where the old version is installed
+```
+
+xelatex --version
 
 ```{r}
 #| include: false
@@ -42,7 +60,6 @@ library(patchwork)
 library(kableExtra)
 library(dplyr)
 library(stringr)
-
 library(stm)
 library(quanteda)
 library(tm)
@@ -57,20 +74,12 @@ hansard_corpus <- read_parquet(here::here("C:/Users/35911/Downloads/Hansard_Inte
 ```
 
 ```{r}
+#| include: false
 #| warning: false
 #| message: false
 # View the first few rows
 #head(hansard_corpus, 150)
-
-```
-
-
-```{r}
-#| include: false
-#| warning: false
-#| message: false
 summary(hansard_corpus)
-
 ```
 
 # Data {#sec-data}
@@ -81,6 +90,71 @@ Data analysis is performed using statistical programming language R [@citeR], wi
 The data used in this research is a compiled digital record of the Australian Hansard that documents parliamentary proceedings from 1998 t0 2022 [@KatzAlexander2022]. This comprehensive database includes variables such as speaker details (e.g., name, party, gender, electorate), timestamps, speech content, and flags for interjections, questions, and other procedural elements. This dataset is favoured for its utility in examining parliamentary gender dynamics, speech patterns, and the evolution of political discourse over an extensive period.
 
 ## Data Cleaning
+To ensure consistency and accuracy in the analysis, we performed several data cleaning steps on the Hansard corpus dataset. One of the primary tasks was standardizing categorical variables, correcting data types, and filtering the dataset to focus on relevant parliamentary debates.
+
+First, we standardized the gender variable by converting it to a character type and addressing missing values. Any NA or empty string entries were replaced with "Unknown", ensuring that all observations were categorized as "Male", "Female", or "Unknown". Next, we processed the interjection (interject) variable, which indicates whether a speech was interrupted. Since it was originally stored as a mix of character and numeric values, we converted it into a numeric format while preserving any missing values. Similarly, the date column was transformed into a proper Date format (YYYY-MM-DD), and we extracted the year variable for longitudinal analysis.
+
+A critical filtering step was applied to retain only chamber speeches (fedchamb_flag == 0). This decision was made because chamber debates represent formal parliamentary discussions, including legislative debates and question periods, where interruptions carry significant political and procedural weight. In contrast, committee hearings and other non-chamber sessions often have different procedural norms and may not exhibit the same interruption patterns. Focusing on chamber data ensures that our findings reflect structured parliamentary interactions rather than informal or committee-based discussions.
+
+Additionally, we computed the word count for each speech by applying a regular expression that counts the number of words in the speech text (body). This provides insights into the length of speeches, which may be relevant in later analyses.
+
+@preview_cleaned provides a snapshot of key variables, including year, gender, interject, party, and word_count, allowing us to inspect how the dataset is structured post-cleaning. @sum_stats presents aggregated counts of speeches by gender, interruption status, and party affiliation. It highlights the number of speeches given by male and female parliamentarians, how often interruptions occur, and the distribution of party representation. Missing values are explicitly recorded where relevant.
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+#| tbl-cap: "Preview of the Cleaned Hansard Dataset"
+#| label: tbl-preview_cleaned
+# Select important variables for preview
+preview_table <- hansard_corpus %>%
+  select(year, gender, interject, party, word_count, fedchamb_flag) %>%
+  head(6)  # Show only the first 6 rows
+
+# Display the preview table
+kable(preview_table)
+
+```
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+#| tbl-cap: "Summary Statistics of the Cleaned Hansard Dataset"
+#| label: tbl-sum_stats
+# Create a structured summary table
+summary_table <- data.frame(
+  Variable = c(
+    "Gender", "Gender", "Gender",
+    "Interject", "Interject",
+    "Party", "Party", "Party", "Party", "Party"
+  ),
+  Category = c(
+    "Male", "Female", "Unknown",
+    "No", "Yes",
+    "ALP", "LP", "Nats", "Other", "Missing"
+  ),
+  Count = c(
+    sum(hansard_corpus$gender == "Male", na.rm = TRUE),
+    sum(hansard_corpus$gender == "Female", na.rm = TRUE),
+    sum(hansard_corpus$gender == "Unknown", na.rm = TRUE),
+    
+    sum(hansard_corpus$interject == 0, na.rm = TRUE),
+    sum(hansard_corpus$interject == 1, na.rm = TRUE),
+
+    sum(hansard_corpus$party == "ALP", na.rm = TRUE),
+    sum(hansard_corpus$party == "LP", na.rm = TRUE),
+    sum(hansard_corpus$party == "Nats", na.rm = TRUE),
+    sum(!hansard_corpus$party %in% c("ALP", "LP", "Nats") & !is.na(hansard_corpus$party)),
+    sum(is.na(hansard_corpus$party))
+  )
+)
+
+# Display the table in LaTeX-style format
+kable(summary_table)
+
+```
+
+By ensuring data consistency and filtering for relevant parliamentary discourse, these preprocessing steps provide a clean and structured dataset, ready for further analysis on gender-based interruptions and topic modeling in Australian parliamentary debates.
 
 ## Measurement
 The Hansard dataset represents various real-world parliamentary phenomena through carefully constructed variables. However, as with all datasets, some considerations and limitations arise when transitioning from real-world events to structured data. This section discusses what the variables of interest are measuring and potential challenges in their representation.
@@ -193,8 +267,6 @@ ggplot(final_data, aes(x = year, y = total_interruptions, color = gender)) +
   scale_x_continuous(breaks = seq(min(final_data$year), max(final_data$year), by = 5))  # Adjust x-axis breaks
 
 ```
-
-
 
 
 ```{r}
@@ -332,46 +404,6 @@ print(final_data1)
 ```
 
 
-```{r}
-#| echo: false
-#| warning: false
-#| message: false
-#| tbl-cap: "Gender Interruption Proportions Annual Comparison"
-#| label: tbl-compareyear
-
-# Prepare the data
-comparison_data <- final_data1 %>%
-  pivot_wider(
-    id_cols = year,
-    names_from = gender,
-    values_from = interruption_proportion
-  ) %>%
-  mutate(
-    More_Interrupted_Gender = case_when(
-      Male > Female ~ "Male",
-      Female > Male ~ "Female",
-      TRUE ~ "Equal"  # This handles cases where the interruption proportions are the same
-    )
-  )
-
-# Generate the table using gt
-comparison_data %>%
-  select(year, More_Interrupted_Gender) %>%  # Include only year and the gender comparison
-  gt() %>%
-  cols_label(
-    year = "Year",
-    More_Interrupted_Gender = "More Interrupted Gender"
-  ) %>%
-  tab_style(
-    style = cell_text(align = "left"),  # Align text to the left
-    locations = cells_body(columns = everything())  # Apply to all columns in the body
-  )
-
-```
-
-
-@tbl-compareyear displays the more interrupted gender every year in the parliament and compares all members and only chamber members. While most years are the same, there is a notable shift in the gender experiencing more frequent interruptions from 2018 to 2020. In the broader dataset, males were more frequently interrupted; however, this pattern shifts in the non-federal chamber data, where females became the more interrupted gender during these years. This change highlights the variability in gender dynamics within different parliamentary environments and suggests that factors specific to non-federal chamber settings may influence these interaction patterns more significantly for female members.
-
 
 
 ```{r}
@@ -392,7 +424,8 @@ interruptions_question_analysis <- hansard_corpus %>%
 
 # Print the resulting dataset to verify
 print(interruptions_question_analysis)
-
+library(tinytex)
+library("xfun")
 ```
 
 ```{r}
@@ -598,7 +631,6 @@ plot2 <- ggplot(interruptions_normalized, aes(x = party, y = interruption_probab
 # Add a combined title and arrange plots with patchwork
 (plot1 + plot2) +
   plot_annotation(
-    title = "Interruptions in Major Australian Political Parties by Gender",
     theme = theme(
       plot.title = element_text(size = 12, face = "bold", hjust = 0.5)  # Big title styling
     )
@@ -710,7 +742,6 @@ ggplot(interruption_counts, aes(x = in_gov, y = Count, fill = interject)) +
   geom_bar(stat = "identity", position = "stack") +
   facet_wrap(~ gender, scales = "free_y") +
   labs(
-    title = "Interruptions Count by Government Status and Gender",
     x = "Government Status",
     y = "Count of Interruptions",
     fill = "Interruption Occurred"
@@ -863,7 +894,6 @@ hansard_corpus1 <- hansard_corpus1 %>%
 ggplot(hansard_corpus1 %>% filter(word_count <= 250), aes(x = word_count, fill = as.factor(interject))) +
   geom_histogram(binwidth = 25, position = "identity", alpha = 0.6) +
   labs(
-    title = "Histogram of Word Counts in Speeches",
     x = "Word Count",
     y = "Frequency",
     fill = "Interjection Occurred"
@@ -878,19 +908,12 @@ ggplot(hansard_corpus1 %>% filter(word_count <= 250), aes(x = word_count, fill =
 
 
 
-
-
-
-
-
-
-
 ```{r}
 #| echo: false
 #| warning: false
 #| message: false
 #| label: fig-density
-#| fig-cap: "Density Distribution of Word Count by Gender"
+#| fig-cap: "Density Distribution of Word Count by Gender (Word Count < 500)"
 # Filter the data to include only speeches with word counts under 500 and valid gender values
 filtered_data <- hansard_corpus %>%
   filter(word_count <= 500, gender != "Unknown")
@@ -905,7 +928,6 @@ ggplot(filtered_data, aes(x = word_count, fill = gender, color = gender)) +
     values = c("Female" = "red", "Male" = "blue")
   ) +
   labs(
-    title = "Density Distribution of Word Count by Gender (Word Count < 500)",
     x = "Word Count",
     y = "Density",
     fill = "Gender",
@@ -982,6 +1004,17 @@ y_i|\pi_i &\sim \mbox{Bern}(\pi_i) \\
 \beta_4 &\sim \mbox{Normal}(0, 2.5) \nonumber
 \end{align}
 
+
+In this model, \( y_i \) represents the binary outcome variable indicating whether a speech was interrupted (\(\text{interject} = 1\)) or not (\(\text{interject} = 0\)). The probability of an interruption (\(\pi_i\)) is modeled using a logistic link function, where the log-odds of an interruption are expressed as a linear combination of the intercept (\(\alpha\)) and the predictor variables: where \(\beta_1, \beta_2, \beta_3, \beta_4\) are the regression coefficients corresponding to each predictor. The variables included in the model are defined as follows: \(\text{gender}_i\) represents the speaker’s gender (Male, Female, or Unknown), \(\text{party}_i\) indicates the political party affiliation, \(\text{word\_count}_i\) captures the total number of words spoken in a given speech, and \(\text{word\_count\_gender}_i\) represents the interaction between word count and gender.
+
+To regularize the model and incorporate prior information, we assign informative normal priors to the intercept and coefficients. Specifically, the intercept \(\alpha\) follows a normal distribution with a mean of 0 and a standard deviation of 5, while the coefficients \(\beta_1, \beta_2, \beta_3,\) and \(\beta_4\) follow normal distributions with a mean of 0 and a standard deviation of 2.5. These priors help stabilize the estimates, particularly in cases where the data might be sparse or imbalanced.
+
+This modeling approach is chosen for several reasons. Firstly, logistic regression is well-suited
+for binary outcome variables, making it appropriate for interruption probabilities. Additionally, Bayesian logistic regression is particularly well-suited for this analysis because it accommodates uncertainty in parameter estimates and allows for the incorporation of prior knowledge. Bayesian methods are advantageous in addressing potential multicollinearity and producing interpretable probabilistic estimates.
+
+The model was implemented in R using the `rstanarm` package [@rstanarm], which applies Markov chain Monte Carlo (MCMC) sampling to estimate the posterior distributions of the model parameters. To optimize computational efficiency, I randomly sampled 1000 observations for model fitting, ensuring a balance between computational feasibility and statistical reliability.
+
+
 # Results {#sec-results}
 ```{r}
 #| include: false
@@ -991,6 +1024,8 @@ y_i|\pi_i &\sim \mbox{Bern}(\pi_i) \\
 
 model1 <-
   readRDS(file = here::here("C:/Users/35911/Downloads/Hansard_Interruptions/models/model1.rds"))
+
+tinytex::tinytex_root()
 
 ```
 
@@ -1012,6 +1047,8 @@ modelsummary(
 @tbl-modelresults1 identifies key predictors including gender, party, and word count of speech interruptions in parliamentary proceedings. Gender plays an important role, with male speakers more likely to experience interruptions compared to female speakers. This suggests that men face slightly higher odds of interjections during their speeches. Party affiliation also significantly influences interruptions, with some parties, such as the ALP, experiencing more frequent interjections, while others, like the LNP, are interrupted less often. These patterns highlight how political dynamics can shape interactions in debates.
 
 Additionally, the length of speeches affects interruptions, with longer speeches slightly less likely to be interrupted, suggesting that concise speeches may invite more interjections. Notably, the interaction between word count and gender reveals that male speakers experience a slight increase in interruptions as their speech length increases, a trend that is less pronounced for female speakers. These findings underscore the combined effects of gender, party dynamics, and speech characteristics in shaping interruption patterns.
+
+Model diagnostics, including convergence checks and posterior summaries, and explanations can be found in @Appendix
 
 ```{r}
 #| include: false
@@ -1038,34 +1075,6 @@ modelsummary(
 
 ```
 
-
-```{r}
-#| include: false
-#| eval: true
-#| warning: false
-#| message: false
-model2 <-
-  readRDS(file = here::here("C:/Users/35911/Downloads/Hansard_Interruptions/models/model2.rds"))
-
-```
-
-```{r}
-#| echo: false
-#| eval: true
-#| label: tbl-modelresults2
-#| tbl-cap: "Model 2 for Interruptions (n = 1000)"
-#| warning: false
-
-modelsummary(
-  list(
-    "Speech Interrupted" = model2
-  ),
-  statistic = "mad"
-  )
-```
-
-The logistic regression model @tbl-modelresults2 continues to highlight key predictors of interruptions during speeches, with the removal of party. Male speakers remain more likely to experience interruptions than female speakers, but the effect size has slightly decreased, reflecting a smaller increase in the likelihood of interruptions. The relationship between speech length and interruptions remains consistent, with longer speeches slightly reducing the likelihood of interruptions. The interaction between word count and gender also remains unchanged, suggesting that longer speeches by male speakers are still slightly more likely to invite interruptions compared to those by females.
-
 ```{r}
 #| include: false
 #| eval: true
@@ -1075,32 +1084,18 @@ hansard_topics <- readRDS(file = here::here("C:/Users/35911/Downloads/Hansard_In
 ```
 
 
-
 ```{r}
 #| include: false
 #| warning: false
 labelTopics(hansard_topics)
 ```
 
-To analyze discussions in the Australian Parliament, I applied Structural Topic Modeling (STM) to identify key themes in speeches from 2020. The process began with data preprocessing, where I filtered the dataset to include only relevant entries, removed missing values, and structured the text data for analysis. A document-feature matrix (DFM) was then created, representing word frequencies while eliminating punctuation, stopwords, and low-frequency terms to improve model efficiency.
 
-The STM model was trained with 10 topics and incorporated party affiliation and speaker gender as prevalence covariates, allowing for an examination of how these factors influence topic distribution. The model was optimized over 50 iterations, ensuring convergence and stability. The final output provided a breakdown of the dominant topics, with key terms extracted using highest probability words, FREX words (distinctive to each topic), Lift words (rare but highly relevant), and Score words (best summarizing a topic’s meaning).
+The Bayesian logistic regression model quantifies gender-based interruptions in the Australian Parliament, assessing whether female speakers face disproportionately more interjections than their male counterparts. However, interruptions alone do not fully capture discourse dynamics. To further explore these patterns, I applied Structural Topic Modeling (STM) to identify the most discussed topics in parliamentary speeches, incorporating gender and party affiliation as prevalence covariates to examine how different groups engage with various topics.
 
-```{r, fig.width=10, fig.height=6}
-#| echo: false
-#| eval: true
-#| label: tbl-stm_prop
-#| tbl-cap: "STM Topic Proportion Plot "
-#| warning: false
-plot(hansard_topics, type = "summary", n = 5)
-```
+By linking the most discussed topics in a given year to the most interrupted gender, I aim to determine whether interruptions are associated with particular types of discourse. For example, if female parliamentarians experienced the highest interruption rates in 2020, I will compare this with the dominant topics that year to uncover potential gendered patterns. This dual approach—quantifying interruptions through regression and analyzing speech content through topic modeling—offers deeper insight into both who gets interrupted and what is being discussed when those interruptions occur.
 
-@tbl-stm_prop provides an overview of the most prevalent themes in the 2020 Australian parliamentary speeches. The x-axis represents the expected topic proportions, indicating how frequently each topic appears across the dataset. The y-axis lists the top topics, summarized by their most representative words.
-
-From this visualization, Topic 5 ("minister, government, time, just") emerges as the most dominant theme, suggesting that government policies, ministerial discussions, and legislative matters were central to parliamentary discourse. Topic 8 ("people, government, need, now") follows closely, highlighting debates around public needs, government interventions, and social policies. Other significant topics include healthcare (Topic 10), economic measures (Topic 4), legal and family-related issues (Topic 7), and national security (Topic 1).
-
-The distribution of topics provides insights into policy priorities and legislative focus areas during 2020. By incorporating metadata such as speaker affiliation and gender, further analysis can uncover how different political groups or demographics engaged with these key issues.
-
+The process began with data preprocessing, where I filtered the dataset to include only relevant entries, removed missing values, and structured the text data for analysis. A document-feature matrix (DFM) was then created, representing word frequencies while eliminating punctuation, stopwords, and low-frequency terms to improve model efficiency. The STM model was trained with 10 topics and incorporated party affiliation and speaker gender as prevalence covariates, allowing for an examination of how these factors influence topic distribution. The model was optimized over 50 iterations, ensuring convergence and stability. The final output provided a breakdown of the dominant topics, with key terms extracted using highest probability words, FREX words (distinctive to each topic), Lift words (rare but highly relevant), and Score words (best summarizing a topic’s meaning).
 
 
 ```{r}
@@ -1151,6 +1146,7 @@ write_csv(topic_summary, "topic_summary_1998_2022.csv")
 #print(topic_summary)
 
 ```
+
 ```{r}
 #| include: false
 library(dplyr)
@@ -1174,15 +1170,12 @@ top_topics_per_year <- topic_summary %>%
 #| tbl-cap: "Most Prominent Topics Per Year"
 #| warning: false
 
-library(gt)
-
 # Create a nicely formatted table without the "Top Topic" column
 top_topics_per_year %>%
   select(-Top_Topic) %>%  # Remove "Top Topic" column
   gt() %>%
   tab_header(
-    title = "Most Prominent Topics Per Year",
-    subtitle = "Extracted from Parliamentary Speeches (1998-2022)"
+    title = "Most Prominent Topics Per Year"
   ) %>%
   cols_label(
     Year = "Year",
@@ -1194,7 +1187,6 @@ top_topics_per_year %>%
     heading.title.font.size = "large",
     heading.subtitle.font.size = "medium"
   )
-
 
 ```
 
@@ -1267,25 +1259,71 @@ ggplot(tracked_topics, aes(x = Year, y = Count, color = Cleaned_Keywords, group 
   geom_line(size = 1.2) +
   geom_point(size = 2) +
   scale_color_manual(values = color_palette) +  # Apply better colors
-  labs(title = "Mentions of Key Topics Over Time",
+  labs(
        x = "Year",
        y = "Count of Mentions",
        color = "Topic Keywords") +
   theme_minimal() +
   theme(legend.position = "right", legend.text = element_text(size = 12))  # Improve legend readability
 
+library(xfun)
 
 ```
 @fig-keytopics tracks the mentions of key policy topics—economy, education, energy, health, policy, and tax—in Australian parliamentary speeches from 1998 to 2022. Each topic fluctuates over time, reflecting shifts in legislative focus due to major events.
 
 Economic discussions remain stable but rise post-2008, aligning with the global financial crisis. Tax mentions spike around 2000, likely due to the introduction of the GST, and reappear during key economic reforms. Health surges in 2020, reflecting COVID-19 discussions, while education remains consistently relevant, peaking during policy changes in higher education and funding. Energy mentions rise after 2010, coinciding with climate policy debates like the carbon tax (2012-2014). The steady increase in policy discussions suggests a growing focus on governance and regulatory matters. These trends highlight how parliamentary attention shifts in response to national and global developments such as economic crises, education reforms, climate policies, and the pandemic.
 
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+#| tbl-cap: "Gender Interruption Proportions Annual Comparison"
+#| label: tbl-compareyear
 
+# Prepare the data
+comparison_data <- final_data1 %>%
+  pivot_wider(
+    id_cols = year,
+    names_from = gender,
+    values_from = interruption_proportion
+  ) %>%
+  mutate(
+    More_Interrupted_Gender = case_when(
+      Male > Female ~ "Male",
+      Female > Male ~ "Female",
+      TRUE ~ "Equal"  # This handles cases where the interruption proportions are the same
+    )
+  )
+
+# Generate the table using gt
+comparison_data %>%
+  select(year, More_Interrupted_Gender) %>%  # Include only year and the gender comparison
+  gt() %>%
+  cols_label(
+    year = "Year",
+    More_Interrupted_Gender = "More Interrupted Gender"
+  ) %>%
+  tab_style(
+    style = cell_text(align = "left"),  # Align text to the left
+    locations = cells_body(columns = everything())  # Apply to all columns in the body
+  )
+
+```
+
+
+
+@tbl-compareyear displays the more interrupted gender every year in the parliament and compares all members and only chamber members. While most years are the same, there is a notable shift in the gender experiencing more frequent interruptions from 2018 to 2020. In the broader dataset, males were more frequently interrupted; however, this pattern shifts in the non-federal chamber data, where females became the more interrupted gender during these years. This change highlights the variability in gender dynamics within different parliamentary environments and suggests that factors specific to non-federal chamber settings may influence these interaction patterns more significantly for female members.
+
+The relationship between key discussion topics and gender-based interruptions in the Australian Parliament reveals interesting patterns over time. One notable observation is that years with significant shifts in dominant topics often correspond to changes in the most interrupted gender. For example, in 2001 and 2003–2007, when female parliamentarians faced more interruptions, discussions around education, policy, and health were prominent. This suggests that women may have been more vocal in policy-driven debates during these years, potentially contributing to higher interruption rates. Conversely, in years when male speakers were interrupted more often, such as 1998–2000, 2008–2013, and 2020–2022, the most discussed topics included economy, tax, and government policy, indicating that male parliamentarians may have taken the lead in these areas.
+
+Another striking trend is the spike in health-related discussions in 2020, which coincides with a shift back to male parliamentarians being more interrupted. This could reflect the heightened focus on COVID-19-related policies, with male politicians engaging in more contentious discussions. Similarly, 2018 and 2019 saw female parliamentarians experiencing the highest interruptions, aligning with rising debates on legislation and social policies—areas where women may have had greater involvement.
+
+Overall, these findings suggest that interruption patterns are not random but are influenced by the topics dominating parliamentary discourse each year. When discussions center on traditionally social or policy-oriented issues, women appear to face higher interruption rates, while economic and government-related debates tend to correspond with increased interruptions for male speakers. This interplay between gender, parliamentary discourse, and interruptions underscores how power dynamics in political speech are shaped by both who is speaking and what is being discussed.
 
 
 ### Model justification
 
-We expect a positive relationship between the size of the wings and time spent aloft. In particular...
+We expect a positive relationship between the= size of the wings and time spent aloft. In particular...
 
 We can use maths by including latex between dollar signs, for instance $\theta$.
 
@@ -1318,6 +1356,18 @@ Weaknesses and next steps should also be included.
 
 # Appendix {-}
 
+```{r}
+library(bayesplot)
+#mcmc_trace(as.array(model1))
+
+```
+
+```{r}
+#pp_check(model1, nsamples = 100)
+
+```
+
+
 
 # Additional data details
 
@@ -1326,6 +1376,7 @@ Weaknesses and next steps should also be included.
 ## Posterior predictive check
 
 ## Diagnostics
+
 
 
 
