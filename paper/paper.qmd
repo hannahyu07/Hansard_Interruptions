@@ -1340,19 +1340,29 @@ Overall, these findings suggest that interruption patterns are not random but ar
 
 # Discussion {#sec-discussion}
 
-## First discussion point {#sec-first-point}
+## Gender and Interruptions in the Australian Parliament
 
-If my paper were 10 pages, then should be be at least 2.5 pages. The discussion is a chance to show off what you know and what you learnt from all this. 
+Our analysis confirms that male parliamentarians experience more interruptions in absolute terms. However, after adjusting for differences in speech frequency, the gap between genders narrows significantly, with male and female MPs facing comparable rates of interruptions relative to their total speeches. This challenges the common assumption that female parliamentarians are disproportionately interrupted, at least in the Australian Parliament. While gender remains a factor in parliamentary discourse, its impact on interruptions appears less pronounced than in other legislative bodies, such as the U.S. Congress.
 
-## Second discussion point
+Despite the lack of a large gender-based disparity in interruptions, there is evidence that interruptions affect speech length. On average, interrupted speeches are significantly shorter than uninterrupted ones. Female MPs, while generally delivering longer speeches than male MPs, experience a more pronounced drop in speech length when interrupted. This suggests that while men may be interrupted more often, interruptions may have a stronger effect on women's ability to maintain the floor. This aligns with previous studies suggesting that interruptions can serve as a subtle tool to limit participation.
 
-Please don't use these as sub-heading labels - change them to be what your point actually is.
+## The Role of Political Party and Government Status
 
-## Third discussion point
+Political party affiliation plays a significant role in shaping interruption patterns. MPs from the Australian Labor Party (ALP) experience more interruptions than those from the Liberal Party (LP). This aligns with expectations, given the adversarial nature of parliamentary debate, where opposition parties face heightened scrutiny and interjections. Notably, interruptions are significantly less frequent for MPs in government, reinforcing the idea that institutional authority provides protection from speech disruptions. However, due to missing data on government status for many MPs, this result should be interpreted with caution.
 
-## Weaknesses and next steps
+The structural topic model (STM) further reveals that interruptions are not randomly distributed but correlate with certain debate topics. Economic and tax-related discussions—often led by male MPs—coincide with higher male interruptions. In contrast, years where female MPs experienced more interruptions align with increased discussions on education, health, and social policy. This suggests that rather than gender alone determining interruption rates, the subject matter of the debate plays a role in shaping speech dynamics. MPs may be more likely to interrupt when they perceive a speaker as challenging their party’s position on key issues.
 
-Weaknesses and next steps should also be included.
+## Temporal Trends and External Factors
+
+The temporal analysis highlights key shifts in interruption patterns over time. The proportion of interruptions peaked in the early 2010s before declining in recent years. This trend aligns with broader changes in parliamentary norms and debate structures, including reforms aimed at improving parliamentary decorum. Notably, the gendered patterns of interruptions fluctuated, with women experiencing higher relative interruption rates in some years (e.g., 2018–2019) but lower rates in others. This variability suggests that external political events, leadership changes, and shifts in parliamentary culture may influence interruption dynamics.
+
+## Limitations and Future Research Directions
+
+This study has several limitations that should be considered when interpreting the results. First, missing data on important variables such as government status prevents a complete analysis of how being in government versus opposition affects interruptions. While our results indicate that MPs in government experience fewer interruptions, this conclusion is weakened by the number of MPs whose status is not recorded. 
+
+Second, our study is descriptive rather than causal. The analysis identifies associations between gender, party affiliation, debate topics, and interruptions, but it does not establish whether these factors directly cause changes in interruption rates. Other unmeasured variables, such as individual speaking styles, political seniority, or chamber dynamics, may influence interruptions. Future research could incorporate controlled experiments or natural experiments (e.g., rule changes in Parliament) to test causal mechanisms.
+
+Lastly, there is potential for reverse causality, particularly regarding speech length. While the results indicate that interruptions correlate with shorter speeches, it is unclear whether interruptions cause speakers to shorten their remarks or if shorter speeches are inherently more likely to be interrupted. A similar concern applies to gender-based differences in speech length—longer speeches by female MPs may attract interruptions, but interruptions may also lead to shorter contributions over time. Future research using longitudinal designs or speaker-level fixed effects models could help disentangle these relationships.
 
 \newpage
 
